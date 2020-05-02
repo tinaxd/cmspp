@@ -5,9 +5,10 @@
 
 using namespace minesweeper;
 
-MineAI::MineAI(std::shared_ptr<Board> board)
+MineAI::MineAI(QSharedPointer<Board> board)
     : board(std::move(board))
-{}
+{
+}
 
 std::optional<int>
 MineAI::open_any()
@@ -25,17 +26,15 @@ MineAI::open_any()
     return std::optional<int>();
 }
 
-bool
-MineAI::solve_all(std::shared_ptr<Board> board, bool logging, AICallback cb)
+bool MineAI::solve_all(QSharedPointer<Board> board, bool logging, AICallback cb)
 {
     return solve_all(std::move(board), logging, cb, 0);
 }
 
-bool
-MineAI::solve_all(std::shared_ptr<Board> board,
-                  bool logging,
-                  AICallback cb,
-                  int nest_level)
+bool MineAI::solve_all(QSharedPointer<Board> board,
+    bool logging,
+    AICallback cb,
+    int nest_level)
 {
     auto ai = std::make_unique<MineAI>(board);
     ai->assume_nest_level = nest_level;
@@ -58,8 +57,7 @@ MineAI::solve_all(std::shared_ptr<Board> board,
     }
 }
 
-void
-MineAI::next_step(bool logging, AICallback cb)
+void MineAI::next_step(bool logging, AICallback cb)
 {
     if (firsttime) {
         firsttime = false;
@@ -176,7 +174,7 @@ MineAI::next_step(bool logging, AICallback cb)
             std::cout << "ASSUME closed cell as flagged (entering level "
                       << assume_nest_level + 1 << ") " << i << std::endl;
         }
-        auto new_board = std::make_shared<Board>(*board);
+        auto new_board = QSharedPointer<Board>(new Board(*board));
         (*new_board)[i].state() = CellState::Flagged;
         try {
             if (solve_all(new_board, logging, cb, assume_nest_level + 1)) {

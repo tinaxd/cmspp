@@ -27,7 +27,8 @@ Board::Board(const Board& board)
     , init_bombs_(board.init_bombs_)
     , failed_(board.failed_)
     , cells_(board.cells_)
-{}
+{
+}
 
 Board::Board(Board&& board)
     : width_(board.width_)
@@ -35,7 +36,8 @@ Board::Board(Board&& board)
     , init_bombs_(board.init_bombs_)
     , failed_(board.failed_)
     , cells_(std::move(board.cells_))
-{}
+{
+}
 
 Board&
 Board::operator=(const Board& board)
@@ -59,8 +61,7 @@ Board::operator=(Board&& board)
     return *this;
 }
 
-void
-Board::setup_cells(int width, int height, int n_bombs)
+void Board::setup_cells(int width, int height, int n_bombs)
 {
     std::random_device seeder;
     std::mt19937 random;
@@ -68,7 +69,7 @@ Board::setup_cells(int width, int height, int n_bombs)
 
     auto cells = width * height;
     for (auto i = 0; i < cells; i++) {
-        cells_.emplace_back(false);
+        cells_.append(Cell(false));
     }
 
     std::vector<size_t> bomb_indices;
@@ -80,17 +81,16 @@ Board::setup_cells(int width, int height, int n_bombs)
         auto rand = random() % bomb_indices.size();
         auto index = bomb_indices.at(rand);
         bomb_indices.erase(bomb_indices.begin() + rand);
-        cells_.at(index).has_bomb() = true;
+        cells_[index].has_bomb() = true;
     }
 }
 
-void
-Board::build_neighbor_map()
+void Board::build_neighbor_map()
 {
-    std::array<Direction, 8> dirs = { Direction::LeftUp,  Direction::Up,
-                                      Direction::RightUp, Direction::Left,
-                                      Direction::Right,   Direction::LeftDown,
-                                      Direction::Down,    Direction::RightDown };
+    std::array<Direction, 8> dirs = { Direction::LeftUp, Direction::Up,
+        Direction::RightUp, Direction::Left,
+        Direction::Right, Direction::LeftDown,
+        Direction::Down, Direction::RightDown };
     for (auto i = 0; i < get_total_cells(); i++) {
         int bombs = 0;
         for (auto dir : dirs) {
@@ -99,7 +99,7 @@ Board::build_neighbor_map()
                 bombs++;
             }
         }
-        cells_.at(i).set_neighbor_bombs(bombs);
+        cells_[i].set_neighbor_bombs(bombs);
     }
 }
 
@@ -149,17 +149,15 @@ Board::get_cell_index(int base, Direction direction)
 Board::Point
 Board::from_index(int index) const
 {
-    return std::make_pair<int, int>(index % width_, index / height_);
+    return qMakePair<int, int>(index % width_, index / height_);
 }
 
-int
-Board::from_point(const Board::Point& point) const
+int Board::from_point(const Board::Point& point) const
 {
     return from_point(point.first, point.second);
 }
 
-int
-Board::from_point(int column, int row) const
+int Board::from_point(int column, int row) const
 {
     return column + row * width_;
 }
@@ -183,8 +181,7 @@ Board::show_game_state(std::ostream& os, bool disclose_bombs) const
     return os;
 }
 
-char
-Board::char_of_cell(const Cell& c, bool disclose_bomb)
+char Board::char_of_cell(const Cell& c, bool disclose_bomb)
 {
     if (c.flagged()) {
         return disclose_bomb && !c.has_bomb() ? 'f' : 'F';
@@ -205,14 +202,12 @@ Board::char_of_cell(const Cell& c, bool disclose_bomb)
     return 'O';
 }
 
-void
-Board::open_cell(const Point& point)
+void Board::open_cell(const Point& point)
 {
     open_cell(from_point(point));
 }
 
-void
-Board::open_cell(int index)
+void Board::open_cell(int index)
 {
     if (cells_.at(index).has_bomb()) {
         failed_ = true;
@@ -221,10 +216,14 @@ Board::open_cell(int index)
     open_cell4(index);
 }
 
-void
-Board::open_cell4(int index)
+void Board::open_cell(int column, int row)
 {
-    auto& cell = cells_.at(index);
+    open_cell(from_point(column, row));
+}
+
+void Board::open_cell4(int index)
+{
+    auto& cell = cells_[index];
     if (cell.has_bomb() || cell.opened() || cell.flagged()) {
         // do not disclose.
         return;
@@ -248,34 +247,37 @@ Board::open_cell4(int index)
     }
 }
 
-bool
-Board::cleared() const
+bool Board::cleared() const
 {
     for (const auto& cell : cells_) {
-        if ((!cell.has_bomb() && !cell.opened()) ||
-                (cell.has_bomb() && cell.opened())) {
+        if ((!cell.has_bomb() && !cell.opened()) || (cell.has_bomb() && cell.opened())) {
             return false;
         }
     }
     return true;
 }
 
-void
-Board::toggle_flag(int index)
+void Board::toggle_flag(int index)
 {
-    auto& cell = cells_.at(index);
+    auto& cell = cells_[index];
     switch (cell.state()) {
     case CellState::Opened:
         return;
     case CellState::Closed:
         cell.state() = CellState::Flagged;
+        break;
     case CellState::Flagged:
         cell.state() = CellState::Closed;
+        break;
     }
 }
 
-void
-Board::toggle_flag(const Point& point)
+void Board::toggle_flag(const Point& point)
 {
     toggle_flag(from_point(point));
+}
+
+void Board::toggle_flag(int column, int row)
+{
+    toggle_flag(from_point(column, row));
 }

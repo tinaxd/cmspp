@@ -6,6 +6,13 @@
 
 using namespace minesweeper;
 
+const QColor BoardView::CLOSED_COLOR { 0xa9, 0xa9, 0xa9 };
+const QColor BoardView::OPENED_COLOR { 0x00, 0x64, 0x00 };
+const QColor BoardView::FLAGGED_COLOR { 0xff, 0x45, 0x00 };
+const QColor BoardView::BACKGROUND_COLOR { 0xd3, 0xd3, 0xd3 };
+const QColor BoardView::HIGHLIGHT_COLOR { 0xad, 0xd8, 0xe6 };
+const QColor BoardView::LINE_COLOR { 0xf0, 0xf8, 0xff };
+
 BoardView::BoardView(QWidget* parent)
     : QWidget(parent)
 {

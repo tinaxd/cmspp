@@ -30,12 +30,12 @@ class BoardView : public QWidget {
     int cellWidth = 42;
     int cellHeight = 42;
 
-    static constexpr QColor CLOSED_COLOR { 0xa9, 0xa9, 0xa9 };
-    static constexpr QColor OPENED_COLOR { 0x00, 0x64, 0x00 };
-    static constexpr QColor FLAGGED_COLOR { 0xff, 0x45, 0x00 };
-    static constexpr QColor BACKGROUND_COLOR { 0xd3, 0xd3, 0xd3 };
-    static constexpr QColor HIGHLIGHT_COLOR { 0xad, 0xd8, 0xe6 };
-    static constexpr QColor LINE_COLOR { 0xf0, 0xf8, 0xff };
+    static const QColor CLOSED_COLOR;
+    static const QColor OPENED_COLOR;
+    static const QColor FLAGGED_COLOR;
+    static const QColor BACKGROUND_COLOR;
+    static const QColor HIGHLIGHT_COLOR;
+    static const QColor LINE_COLOR;
 
     QPair<int, int> getIndexFromMouseCord(double x, double y) const;
 

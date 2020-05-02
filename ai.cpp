@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <memory>
 
 using namespace minesweeper;
 
@@ -100,6 +101,8 @@ void MineAI::next_step(bool logging, AICallback cb)
                     break;
                 case CellState::Flagged:
                     flagged_cells_around++;
+                    break;
+                default:
                     break;
                 }
             }

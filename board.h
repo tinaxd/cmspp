@@ -33,6 +33,11 @@ class Cell {
     int neighbor_bombs_ = 0;
 
 public:
+    Cell()
+        : Cell(false)
+    {
+    }
+
     Cell(bool has_bomb, CellState state = CellState::Closed)
         : has_bomb_(has_bomb)
         , state_(state)

@@ -5,6 +5,7 @@
 #include <QColor>
 #include <QPair>
 #include <QSharedPointer>
+#include <QVBoxLayout>
 #include <QWidget>
 #include <memory>
 #include <optional>

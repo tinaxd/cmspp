@@ -346,6 +346,7 @@ void LazyInitBoard::open_cell(int index)
 {
     if (beforeInit) {
         generateActualBoard(index);
+        beforeInit = false;
     }
     Board::open_cell(index);
 }

@@ -1,7 +1,9 @@
 ﻿#include "guimain.h"
 #include "ai.h"
 #include "board.h"
+#include "boardconfigview.h"
 #include "boardview.h"
+#include "ui_mainwindow.h"
 #include <QMessageBox>
 #include <QString>
 #include <QThread>
@@ -41,19 +43,22 @@ public:
     }
 };
 
-GuiMain::GuiMain()
+GuiMain::GuiMain(QWidget* parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
 {
+    ui->setupUi(this);
     qRegisterMetaType<QSharedPointer<Board>>("QSharedPointer<Board>");
-
-    view = new BoardView();
-    view->setCallback(std::make_unique<MainCallback>());
 
     setGeometry(30, 30, 700, 700);
     setWindowTitle("Cane MineSweeper");
-    setCentralWidget(view);
 
-    connect(this, &GuiMain::redrawAll, view, &BoardView::forceRedraw);
-    connect(this, &GuiMain::replaceBoard, view, &BoardView::setBoard);
+    connect(this, &GuiMain::redrawAll, ui->centralwidget, &BoardView::forceRedraw);
+    connect(this, &GuiMain::replaceBoard, ui->centralwidget, &BoardView::setBoard);
+
+    connect(ui->actionNew_Game, &QAction::triggered, this, &GuiMain::showNewGameWindow);
+
+    ui->centralwidget->setCallback(std::make_unique<MainCallback>());
 
     newGame(16, 16, 32);
 }
@@ -75,6 +80,17 @@ void GuiMain::newGame(int width, int height, int n_bombs)
 {
     QSharedPointer<LazyInitBoard> board(new LazyInitBoard(width, height, n_bombs));
     emit replaceBoard(board);
+}
+
+void GuiMain::showNewGameWindow()
+{
+    auto* config = new BoardConfigView(this);
+    connect(config, &BoardConfigView::onFinish, [this, config](int width, int height, int bombs) {
+        newGame(width, height, bombs);
+        config->deleteLater();
+    });
+    connect(config, &BoardConfigView::onCancel, config, &QWidget::deleteLater);
+    config->show();
 }
 
 void MainCallback::onWin(minesweeper::BoardView& bv)

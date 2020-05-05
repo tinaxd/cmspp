@@ -4,6 +4,10 @@
 #include "boardview.h"
 #include <QMainWindow>
 
+namespace Ui {
+class MainWindow;
+}
+
 namespace minesweeper {
 
 struct MainCallback : public WinLoseAction {
@@ -17,11 +21,11 @@ public:
 class GuiMain : public QMainWindow {
     Q_OBJECT
 
-    BoardView* view;
+    Ui::MainWindow* ui;
     QSharedPointer<Board> board;
 
 public:
-    GuiMain();
+    GuiMain(QWidget* parent = nullptr);
 
     void autoSolve(double intervalSeconds);
 
@@ -31,6 +35,7 @@ signals:
 
 public slots:
     void newGame(int width, int height, int n_bombs);
+    void showNewGameWindow();
 };
 
 } // namespace minesweeper

@@ -267,27 +267,36 @@ struct DoNothing : public AICallback {
 
 bool minesweeper::ai_is_solvable(const Board& board)
 {
-    //QEventLoop loop;
-    std::optional<bool> result;
-    QThread* thread = QThread::create([&result, board = board]() {
-        try {
-            DoNothing cb;
-            std::cout << std::endl;
-            auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
-                false, cb);
-            result = std::make_optional(res);
-        } catch (const AIReasoningError& e) {
-            result = std::make_optional(false);
-        }
-    });
-    thread->start();
-    QThread::sleep(1);
-    thread->terminate();
-    thread->quit();
-    if (result.has_value()) {
-        return result.value();
+    //    std::optional<bool> result;
+    //    QThread* thread = QThread::create([&result, board = board]() {
+    //        try {
+    //            DoNothing cb;
+    //            std::cout << std::endl;
+    //            auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
+    //                false, cb);
+    //            result = std::make_optional(res);
+    //        } catch (const AIReasoningError& e) {
+    //            result = std::make_optional(false);
+    //        }
+    //    });
+    //    thread->start();
+    //    QThread::sleep(1);
+    //    thread->terminate();
+    //    thread->quit();
+    //    thread->deleteLater();
+    //    if (result.has_value()) {
+    //        return result.value();
+    //    }
+    //    qDebug("Solver timeout");
+    //    return false;
+    //    // TODO: thread 内の計算が終わったら、タイムアウトを待たずに終了する.
+
+    try {
+        DoNothing cb;
+        std::cout << std::endl;
+        return MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
+            false, cb);
+    } catch (const AIReasoningError& e) {
+        return false;
     }
-    qDebug("Solver timeout");
-    return false;
-    // TODO: thread 内の計算が終わったら、タイムアウトを待たずに終了する.
 }

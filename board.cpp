@@ -7,6 +7,10 @@
 
 using namespace minesweeper;
 
+namespace minesweeper {
+bool ai_is_solvable(const Board& board);
+}
+
 Board::Board(int width, int height, int n_bombs, bool initialize)
     : width_(width)
     , height_(height)
@@ -26,17 +30,23 @@ Board::Board(int width, int height, int n_bombs, bool initialize)
     }
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes)
+Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool ai_check)
     : Board(width, height, n_bombs, false)
 {
     if (n_bombs >= width * height - excludes.size()) {
         throw std::runtime_error("illegal arguments");
     }
+AGAIN:
     setup_cells(width, height, n_bombs, excludes);
     build_neighbor_map();
+
+    if (!ai_is_solvable(*this)) {
+        initAll();
+        goto AGAIN;
+    }
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes)
+Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes, bool ai_check)
     : Board(width, height, n_bombs, false)
 {
     if (n_bombs >= width * height - excludes.size()) {
@@ -46,8 +56,15 @@ Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& ex
     for (const auto& ex : excludes) {
         excludes_index.append(from_point(ex));
     }
+
+AGAIN:
     setup_cells(width, height, n_bombs, excludes_index);
     build_neighbor_map();
+
+    if (!ai_is_solvable(*this)) {
+        initAll();
+        goto AGAIN;
+    }
 }
 
 Board::Board(const Board& board)
@@ -297,6 +314,11 @@ bool Board::cleared() const
     return true;
 }
 
+void Board::initAll()
+{
+    cells_.clear();
+}
+
 void Board::toggle_flag(int index)
 {
     auto& cell = cells_[index];
@@ -324,17 +346,61 @@ void Board::toggle_flag(int column, int row)
 
 void LazyInitBoard::generateActualBoard(int excludeCellIndex)
 {
+AGAIN:
     setup_cells(width_, height_, init_bombs_, QVector<int> { excludeCellIndex });
     build_neighbor_map();
+
+    qDebug("AI testing...");
+    LazyInitBoard copied(*this);
+    copied.beforeInit = false;
+    copied.open_cell(excludeCellIndex);
+    if (!ai_is_solvable(copied)) {
+        qDebug("unsolvable! regenerating board...");
+        initAll();
+        goto AGAIN;
+    }
 }
 
-LazyInitBoard::LazyInitBoard(int width, int height, int n_bombs)
+void LazyInitBoard::initAll()
+{
+    Board::initAll();
+    beforeInit = true;
+}
+
+LazyInitBoard::LazyInitBoard(int width, int height, int n_bombs, bool ai_check)
     : Board(width, height, n_bombs, false)
+    , ai_check(ai_check)
+{
+}
+
+LazyInitBoard::LazyInitBoard(const LazyInitBoard& lb)
+    : Board(lb)
+    , beforeInit(lb.beforeInit)
+{
+}
+
+LazyInitBoard::LazyInitBoard(LazyInitBoard&& lb)
+    : Board(std::move(lb))
+    , beforeInit(lb.beforeInit)
 {
 }
 
 LazyInitBoard::~LazyInitBoard()
 {
+}
+
+LazyInitBoard& LazyInitBoard::operator=(const LazyInitBoard& lb)
+{
+    Board::operator=(lb);
+    beforeInit = lb.beforeInit;
+    return *this;
+}
+
+LazyInitBoard& LazyInitBoard::operator=(LazyInitBoard&& lb)
+{
+    beforeInit = lb.beforeInit;
+    Board::operator=(std::move(lb));
+    return *this;
 }
 
 void LazyInitBoard::open_cell(const Board::Point& point)

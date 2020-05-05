@@ -28,6 +28,7 @@
      <string>Game</string>
     </property>
     <addaction name="actionNew_Game"/>
+    <addaction name="actionShow_Answer"/>
    </widget>
    <addaction name="menuNew_Game"/>
   </widget>
@@ -35,6 +36,11 @@
   <action name="actionNew_Game">
    <property name="text">
     <string>New Game</string>
+   </property>
+  </action>
+  <action name="actionShow_Answer">
+   <property name="text">
+    <string>Show Answer</string>
    </property>
   </action>
  </widget>

@@ -57,6 +57,7 @@ GuiMain::GuiMain(QWidget* parent)
     connect(this, &GuiMain::replaceBoard, ui->centralwidget, &BoardView::setBoard);
 
     connect(ui->actionNew_Game, &QAction::triggered, this, &GuiMain::showNewGameWindow);
+    connect(ui->actionShow_Answer, &QAction::triggered, this, &GuiMain::startAutoSolve);
 
     ui->centralwidget->setCallback(std::make_unique<MainCallback>());
 
@@ -78,7 +79,7 @@ void GuiMain::autoSolve(double intervalSeconds)
 
 void GuiMain::newGame(int width, int height, int n_bombs)
 {
-    QSharedPointer<LazyInitBoard> board(new LazyInitBoard(width, height, n_bombs));
+    board = QSharedPointer<Board>(new LazyInitBoard(width, height, n_bombs, true));
     emit replaceBoard(board);
 }
 
@@ -91,6 +92,11 @@ void GuiMain::showNewGameWindow()
     });
     connect(config, &BoardConfigView::onCancel, config, &QWidget::deleteLater);
     config->show();
+}
+
+void GuiMain::startAutoSolve()
+{
+    autoSolve(0.2);
 }
 
 void MainCallback::onWin(minesweeper::BoardView& bv)

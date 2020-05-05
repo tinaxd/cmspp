@@ -1,5 +1,8 @@
 #include "ai.h"
+#include <QEventLoop>
 #include <QPair>
+#include <QThread>
+#include <QTimer>
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -76,11 +79,12 @@ void MineAI::next_step(bool logging, AICallback& cb)
 {
     const auto in_assumption = assume_nest_level > 0;
 
-    if (firsttime) {
-        firsttime = false;
-        open_any();
-        return;
-    }
+    // 最初からマスが開いてる場合にバグる
+    //    if (firsttime) {
+    //        firsttime = false;
+    //        open_any();
+    //        return;
+    //    }
 
     auto cells = board->get_total_cells();
     bool ok = false;
@@ -219,7 +223,71 @@ void MineAI::next_step(bool logging, AICallback& cb)
     }
 
     // random strategy...
-    board->show_game_state(std::cerr, true);
-    std::cerr << std::endl;
+    if (log_enabled) {
+        board->show_game_state(std::cerr, true);
+        std::cerr << std::endl;
+    }
     throw AIReasoningError("NO LOGIC");
+}
+
+namespace minesweeper {
+struct DoNothing : public AICallback {
+    void before_start(const QSharedPointer<Board>&) override {};
+    bool on_step(const QSharedPointer<Board>&, int, int) override { return true; };
+};
+
+//struct TimeoutSolver : public QObject {
+//    std::unique_ptr<Board> board;
+//    QThread* thread;
+//    std::optional<bool> result;
+//    TimeoutSolver(const Board& board)
+//        : QObject()
+//        , board(new Board(board))
+//    {
+//        thread = QThread::create([this]() {
+//            try {
+//                DoNothing cb;
+//                std::cout << std::endl;
+//                auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(*this->board)),
+//                    false, cb);
+//                this->result = std::make_optional(res);
+//            } catch (const AIReasoningError& e) {
+//                this->result = std::make_optional(false);
+//            }
+//        });
+//        thread->setParent(this);
+//        this->connect(this, &TimeoutSolver::timeout, this->thread, &QThread::terminate);
+//        thread->start();
+//    }
+
+//public slots:
+//    void timeout();
+//};
+}
+
+bool minesweeper::ai_is_solvable(const Board& board)
+{
+    //QEventLoop loop;
+    std::optional<bool> result;
+    QThread* thread = QThread::create([&result, board = board]() {
+        try {
+            DoNothing cb;
+            std::cout << std::endl;
+            auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
+                false, cb);
+            result = std::make_optional(res);
+        } catch (const AIReasoningError& e) {
+            result = std::make_optional(false);
+        }
+    });
+    thread->start();
+    QThread::sleep(1);
+    thread->terminate();
+    thread->quit();
+    if (result.has_value()) {
+        return result.value();
+    }
+    qDebug("Solver timeout");
+    return false;
+    // TODO: thread 内の計算が終わったら、タイムアウトを待たずに終了する.
 }

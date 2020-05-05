@@ -90,6 +90,7 @@ protected:
     void setup_cells(int width, int height, int n_bombs);
     void setup_cells(int width, int height, int n_bombs, const QVector<int>& excludes);
     void build_neighbor_map();
+    virtual void initAll();
 
     static char char_of_cell(const Cell& c, bool disclose_bomb);
 
@@ -99,8 +100,8 @@ public:
     using Point = QPair<int, int>;
 
     Board(int width, int height, int n_bombs, bool initialize = true);
-    Board(int width, int height, int n_bombs, const QVector<int>& excludes);
-    Board(int width, int height, int n_bombs, const QVector<Point>& excludes);
+    Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool ai_check = false);
+    Board(int width, int height, int n_bombs, const QVector<Point>& excludes, bool ai_check = false);
     Board(const Board& board);
     Board(Board&& board);
     virtual ~Board();
@@ -147,10 +148,18 @@ class LazyInitBoard : public Board {
 protected:
     bool beforeInit = true;
     void generateActualBoard(int excludeCellIndex);
+    bool ai_check;
+
+    void initAll() override;
 
 public:
-    LazyInitBoard(int width, int height, int n_bombs);
+    LazyInitBoard(int width, int height, int n_bombs, bool ai_check = false);
+    LazyInitBoard(const LazyInitBoard& lb);
+    LazyInitBoard(LazyInitBoard&& lb);
     virtual ~LazyInitBoard();
+
+    LazyInitBoard& operator=(const LazyInitBoard& lb);
+    LazyInitBoard& operator=(LazyInitBoard&& lb);
 
     virtual void open_cell(const Point& point) override;
     virtual void open_cell(int index) override;

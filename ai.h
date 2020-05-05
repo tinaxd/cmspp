@@ -7,7 +7,7 @@
 #include <optional>
 #include <stdexcept>
 
-using namespace minesweeper;
+namespace minesweeper {
 
 class AIReasoningError : public std::runtime_error {
 public:
@@ -52,3 +52,6 @@ public:
 
     std::optional<int> open_any();
 };
+
+bool ai_is_solvable(const Board& board);
+}

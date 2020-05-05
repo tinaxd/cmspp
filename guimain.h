@@ -36,6 +36,7 @@ signals:
 public slots:
     void newGame(int width, int height, int n_bombs);
     void showNewGameWindow();
+    void startAutoSolve();
 };
 
 } // namespace minesweeper

@@ -24,8 +24,8 @@ constexpr std::array<Direction, 8> ALL_DIRECTIONS = {
 };
 
 struct AICallback {
-    std::function<void(Board& board)> before_start;
-    std::function<bool(Board& board, int current_step, int nest_level)> on_step;
+    virtual void before_start(const QSharedPointer<Board>& board) = 0;
+    virtual bool on_step(const QSharedPointer<Board>& board, int current_step, int nest_level) = 0;
 };
 
 class MineAI {
@@ -40,14 +40,14 @@ public:
     bool& logging() { return log_enabled; }
     const bool& logging() const { return log_enabled; }
 
-    void next_step(bool logging, AICallback cb);
+    void next_step(bool logging, AICallback& cb);
 
     bool static solve_all(QSharedPointer<Board> board,
         bool logging,
-        AICallback cb);
+        AICallback& cb);
     bool static solve_all(QSharedPointer<Board> board,
         bool logging,
-        AICallback cb,
+        AICallback& cb,
         int nest_level);
 
     std::optional<int> open_any();

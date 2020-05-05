@@ -16,12 +16,25 @@ public:
 
 class GuiMain : public QMainWindow {
     Q_OBJECT
+
+    BoardView* view;
+    QSharedPointer<Board> board;
+
 public:
     GuiMain();
 
+    void autoSolve(double intervalSeconds);
+
 signals:
+    void redrawAll();
+    void replaceBoard(QSharedPointer<Board> newBoard);
+
+public slots:
+    void newGame(int width, int height, int n_bombs);
 };
 
 } // namespace minesweeper
+
+Q_DECLARE_METATYPE(QSharedPointer<minesweeper::Board>)
 
 #endif // MINESWEEPER_GUIMAIN_H

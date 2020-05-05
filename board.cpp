@@ -18,7 +18,36 @@ Board::Board(int width, int height, int n_bombs, bool initialize)
     if (initialize) {
         setup_cells(width, height, n_bombs);
         build_neighbor_map();
+    } else {
+        auto cells = width * height;
+        for (auto i = 0; i < cells; i++) {
+            cells_.append(Cell(false));
+        }
     }
+}
+
+Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes)
+    : Board(width, height, n_bombs, false)
+{
+    if (n_bombs >= width * height - excludes.size()) {
+        throw std::runtime_error("illegal arguments");
+    }
+    setup_cells(width, height, n_bombs, excludes);
+    build_neighbor_map();
+}
+
+Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes)
+    : Board(width, height, n_bombs, false)
+{
+    if (n_bombs >= width * height - excludes.size()) {
+        throw std::runtime_error("illegal arguments");
+    }
+    QVector<int> excludes_index;
+    for (const auto& ex : excludes) {
+        excludes_index.append(from_point(ex));
+    }
+    setup_cells(width, height, n_bombs, excludes_index);
+    build_neighbor_map();
 }
 
 Board::Board(const Board& board)
@@ -36,6 +65,10 @@ Board::Board(Board&& board)
     , init_bombs_(board.init_bombs_)
     , failed_(board.failed_)
     , cells_(std::move(board.cells_))
+{
+}
+
+Board::~Board()
 {
 }
 
@@ -63,6 +96,11 @@ Board::operator=(Board&& board)
 
 void Board::setup_cells(int width, int height, int n_bombs)
 {
+    setup_cells(width, height, n_bombs, QVector<int>());
+}
+
+void Board::setup_cells(int width, int height, int n_bombs, const QVector<int>& excludes)
+{
     std::random_device seeder;
     std::mt19937 random;
     random.seed(seeder());
@@ -72,9 +110,11 @@ void Board::setup_cells(int width, int height, int n_bombs)
         cells_.append(Cell(false));
     }
 
-    std::vector<size_t> bomb_indices;
+    QVector<size_t> bomb_indices;
     for (auto i = 0; i < cells; i++) {
-        bomb_indices.push_back(i);
+        if (!excludes.contains(i)) {
+            bomb_indices.append(i);
+        }
     }
 
     for (auto i = 0; i < n_bombs; i++) {
@@ -280,4 +320,37 @@ void Board::toggle_flag(const Point& point)
 void Board::toggle_flag(int column, int row)
 {
     toggle_flag(from_point(column, row));
+}
+
+void LazyInitBoard::generateActualBoard(int excludeCellIndex)
+{
+    setup_cells(width_, height_, init_bombs_, QVector<int> { excludeCellIndex });
+    build_neighbor_map();
+}
+
+LazyInitBoard::LazyInitBoard(int width, int height, int n_bombs)
+    : Board(width, height, n_bombs, false)
+{
+}
+
+LazyInitBoard::~LazyInitBoard()
+{
+}
+
+void LazyInitBoard::open_cell(const Board::Point& point)
+{
+    open_cell(from_point(point));
+}
+
+void LazyInitBoard::open_cell(int index)
+{
+    if (beforeInit) {
+        generateActualBoard(index);
+    }
+    Board::open_cell(index);
+}
+
+void LazyInitBoard::open_cell(int column, int row)
+{
+    open_cell(from_point(column, row));
 }

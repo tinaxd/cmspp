@@ -14,6 +14,8 @@ int main(int argc, char** argv)
     GuiMain* win = new GuiMain();
     win->show();
 
+    //win->autoSolve(0.1);
+
     return app.exec();
 
     // AI Test

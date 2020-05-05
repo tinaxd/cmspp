@@ -32,7 +32,9 @@ class BoardView : public QWidget {
 
     static const QColor CLOSED_COLOR;
     static const QColor OPENED_COLOR;
+    //static const QColor ASSUMED_OPENED_COLOR;
     static const QColor FLAGGED_COLOR;
+    static const QColor ASSUMED_FLAGGED_COLOR;
     static const QColor BACKGROUND_COLOR;
     static const QColor HIGHLIGHT_COLOR;
     static const QColor LINE_COLOR;
@@ -70,6 +72,12 @@ public slots:
         update();
         repaint();
     };
+
+    void forceRedraw()
+    {
+        update();
+        repaint();
+    }
 };
 }
 

@@ -31,6 +31,7 @@ class Cell {
     bool has_bomb_;
     CellState state_;
     int neighbor_bombs_ = 0;
+    bool assumption = false;
 
 public:
     Cell()
@@ -48,6 +49,7 @@ public:
         : has_bomb_(cell.has_bomb_)
         , state_(cell.state_)
         , neighbor_bombs_(cell.neighbor_bombs_)
+        , assumption(cell.assumption)
     {
     }
 
@@ -56,6 +58,7 @@ public:
         has_bomb_ = cell.has_bomb_;
         state_ = cell.state_;
         neighbor_bombs_ = cell.neighbor_bombs_;
+        assumption = cell.assumption;
         return *this;
     }
 
@@ -71,9 +74,13 @@ public:
     bool opened() const { return state_ == CellState::Opened; }
     bool closed() const { return state_ == CellState::Closed; }
     bool flagged() const { return state_ == CellState::Flagged; }
+
+    bool& is_assumption() { return assumption; }
+    const bool& is_assumption() const { return assumption; }
 };
 
 class Board {
+protected:
     int width_;
     int height_;
     int init_bombs_;
@@ -81,6 +88,7 @@ class Board {
     bool failed_ = false;
 
     void setup_cells(int width, int height, int n_bombs);
+    void setup_cells(int width, int height, int n_bombs, const QVector<int>& excludes);
     void build_neighbor_map();
 
     static char char_of_cell(const Cell& c, bool disclose_bomb);
@@ -91,8 +99,11 @@ public:
     using Point = QPair<int, int>;
 
     Board(int width, int height, int n_bombs, bool initialize = true);
+    Board(int width, int height, int n_bombs, const QVector<int>& excludes);
+    Board(int width, int height, int n_bombs, const QVector<Point>& excludes);
     Board(const Board& board);
     Board(Board&& board);
+    virtual ~Board();
 
     Board& operator=(const Board& board);
     Board& operator=(Board&& board);
@@ -110,9 +121,9 @@ public:
     std::ostream& operator<<(std::ostream& os) const;
     std::ostream& show_game_state(std::ostream& os, bool disclose_bombs) const;
 
-    void open_cell(const Point& point);
-    void open_cell(int index);
-    void open_cell(int column, int row);
+    virtual void open_cell(const Point& point);
+    virtual void open_cell(int index);
+    virtual void open_cell(int column, int row);
 
     bool failed() const { return failed_; }
     bool cleared() const;
@@ -130,5 +141,19 @@ public:
     void toggle_flag(int xIndex, int yIndex);
 
     int get_total_cells() const { return height_ * width_; }
+};
+
+class LazyInitBoard : public Board {
+protected:
+    bool beforeInit = true;
+    void generateActualBoard(int excludeCellIndex);
+
+public:
+    LazyInitBoard(int width, int height, int n_bombs);
+    virtual ~LazyInitBoard();
+
+    virtual void open_cell(const Point& point) override;
+    virtual void open_cell(int index) override;
+    virtual void open_cell(int column, int row) override;
 };
 }

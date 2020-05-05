@@ -1,4 +1,5 @@
 #include "ai.h"
+#include <QPair>
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -27,14 +28,14 @@ MineAI::open_any()
     return std::optional<int>();
 }
 
-bool MineAI::solve_all(QSharedPointer<Board> board, bool logging, AICallback cb)
+bool MineAI::solve_all(QSharedPointer<Board> board, bool logging, AICallback& cb)
 {
     return solve_all(std::move(board), logging, cb, 0);
 }
 
 bool MineAI::solve_all(QSharedPointer<Board> board,
     bool logging,
-    AICallback cb,
+    AICallback& cb,
     int nest_level)
 {
     auto ai = std::make_unique<MineAI>(board);
@@ -43,11 +44,11 @@ bool MineAI::solve_all(QSharedPointer<Board> board,
         ai->firsttime = false;
     }
     ai->logging() = logging;
-    cb.before_start(*board);
+    cb.before_start(board);
     int step = 0;
     while (true) {
         ai->next_step(logging, cb);
-        if (!cb.on_step(*board, step++, ai->assume_nest_level)) {
+        if (!cb.on_step(board, step++, ai->assume_nest_level)) {
             return false;
         }
         if (board->cleared()) {
@@ -58,8 +59,23 @@ bool MineAI::solve_all(QSharedPointer<Board> board,
     }
 }
 
-void MineAI::next_step(bool logging, AICallback cb)
+void erase_assumption(const Board& base, Board& erased)
 {
+    assert(base.width() == erased.width());
+    assert(base.height() == erased.height());
+    const int cells = base.get_total_cells();
+
+    for (int i = 0; i < cells; i++) {
+        if (!base[i].is_assumption() && erased[i].is_assumption()) {
+            erased[i].is_assumption() = false;
+        }
+    }
+}
+
+void MineAI::next_step(bool logging, AICallback& cb)
+{
+    const auto in_assumption = assume_nest_level > 0;
+
     if (firsttime) {
         firsttime = false;
         open_any();
@@ -82,20 +98,20 @@ void MineAI::next_step(bool logging, AICallback cb)
         }
 
         // we can solve puzzle by utilizing neighbor bomb cell hints.
-        if (cell.opened()) {
+        if (cell.opened() && !cell.is_assumption()) {
             auto bombs_around = cell.neighbor_bombs();
 
-            std::vector<Cell*> neighbors;
+            std::vector<QPair<Cell*, int>> neighbors;
             for (auto dir : ALL_DIRECTIONS) {
                 auto index = board->get_cell_index(i, dir);
                 if (index.has_value()) {
-                    neighbors.push_back(&(*board)[index.value()]);
+                    neighbors.push_back(qMakePair(&(*board)[index.value()], index.value()));
                 }
             }
             int closed_cells_around = 0;
             int flagged_cells_around = 0;
             for (const auto neighbor : neighbors) {
-                switch (neighbor->state()) {
+                switch (neighbor.first->state()) {
                 case CellState::Closed:
                     closed_cells_around++;
                     break;
@@ -114,8 +130,13 @@ void MineAI::next_step(bool logging, AICallback cb)
                         std::cout << "Open cells around " << i << " by logic." << std::endl;
                     }
                     for (const auto c : neighbors) {
-                        if (c->closed()) {
-                            c->state() = CellState::Opened;
+                        if (c.first->closed()) {
+                            if (!in_assumption) {
+                                board->open_cell(c.second);
+                            } else {
+                                c.first->state() = CellState::Opened;
+                                c.first->is_assumption() = true;
+                            }
                         }
                     }
                     ok = true;
@@ -130,8 +151,9 @@ void MineAI::next_step(bool logging, AICallback cb)
                         std::cout << "Flag cells around " << i << " by logic." << std::endl;
                     }
                     for (const auto c : neighbors) {
-                        if (c->closed()) {
-                            c->state() = CellState::Flagged;
+                        if (c.first->closed()) {
+                            c.first->state() = CellState::Flagged;
+                            c.first->is_assumption() = in_assumption;
                         }
                     }
                     ok = true;
@@ -158,18 +180,19 @@ void MineAI::next_step(bool logging, AICallback cb)
             continue;
         }
 
-        bool surrounded_by_open = false;
+        bool surrounded_by_nonassumption_open = false;
         for (auto dir : ALL_DIRECTIONS) {
             auto next_index = board->get_cell_index(i, dir);
             if (!next_index.has_value())
                 continue;
-            if ((*board)[next_index.value()].opened()) {
-                surrounded_by_open = true;
+            const auto& next_cell = (*board)[next_index.value()];
+            if (next_cell.opened() && !next_cell.is_assumption()) {
+                surrounded_by_nonassumption_open = true;
                 break;
             }
         }
-        if (!surrounded_by_open) {
-            // surrounded by open only
+        if (!surrounded_by_nonassumption_open) {
+            // surrounded by non-assumption open only
             continue;
         }
 
@@ -179,8 +202,10 @@ void MineAI::next_step(bool logging, AICallback cb)
         }
         auto new_board = QSharedPointer<Board>(new Board(*board));
         (*new_board)[i].state() = CellState::Flagged;
+        (*new_board)[i].is_assumption() = true;
         try {
             if (solve_all(new_board, logging, cb, assume_nest_level + 1)) {
+                erase_assumption(*board, *new_board);
                 *board = *new_board;
                 return;
             }

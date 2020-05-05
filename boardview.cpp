@@ -12,6 +12,8 @@ const QColor BoardView::FLAGGED_COLOR { 0xff, 0x45, 0x00 };
 const QColor BoardView::BACKGROUND_COLOR { 0xd3, 0xd3, 0xd3 };
 const QColor BoardView::HIGHLIGHT_COLOR { 0xad, 0xd8, 0xe6 };
 const QColor BoardView::LINE_COLOR { 0xf0, 0xf8, 0xff };
+//const QColor BoardView::ASSUMED_OPENED_COLOR { 0xa4, 0xd6, 0xa4 };
+const QColor BoardView::ASSUMED_FLAGGED_COLOR { 0xbf, 0xb2, 0x5f };
 
 BoardView::BoardView(QWidget* parent)
     : QWidget(parent)
@@ -89,17 +91,26 @@ void BoardView::paintEvent(QPaintEvent*)
             painter.drawRect(initX, initY, cellWidth - margin, cellHeight - margin);
 
             if (drawNumber) {
-                int bombs = cell.neighbor_bombs();
-                if (bombs != 0) {
-                    painter.setBrush(QColor(0xdb, 0x70, 0x93));
-                    painter.setPen(QColor(0xdb, 0x70, 0x93));
-                    auto text = QString::fromStdString(std::to_string(bombs));
+                painter.setBrush(QColor(0xdb, 0x70, 0x93));
+                painter.setPen(QColor(0xdb, 0x70, 0x93));
+                if (cell.is_assumption()) {
+                    auto text = QString::fromStdString("?");
                     painter.drawText(QPointF { initX + (cellWidth / 3), initY + (cellHeight / 2) }, text);
+                } else {
+                    int bombs = cell.neighbor_bombs();
+                    if (bombs != 0) {
+                        auto text = QString::fromStdString(std::to_string(bombs));
+                        painter.drawText(QPointF { initX + (cellWidth / 3), initY + (cellHeight / 2) }, text);
+                    }
                 }
             }
 
             if (flagged) {
-                painter.setBrush(FLAGGED_COLOR);
+                if (cell.is_assumption()) {
+                    painter.setBrush(ASSUMED_FLAGGED_COLOR);
+                } else {
+                    painter.setBrush(FLAGGED_COLOR);
+                }
                 auto cellWidthM = cellWidth - margin;
                 auto cellHeightM = cellHeight - margin;
                 auto flagWidth = cellWidthM / 2.0;

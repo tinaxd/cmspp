@@ -276,8 +276,8 @@ void Board::open_cell4(int index)
         return;
     }
 
-    std::array<Direction, 4> dirs = {
-        Direction::Up, Direction::Left, Direction::Right, Direction::Down
+    std::array<Direction, 8> dirs = {
+        Direction::Up, Direction::Left, Direction::Right, Direction::Down, Direction::LeftUp, Direction::RightUp, Direction::LeftDown, Direction::RightDown
     };
     for (auto dir : dirs) {
         auto next_index = get_cell_index(index, dir);

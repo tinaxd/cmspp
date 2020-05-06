@@ -53,5 +53,21 @@ public:
     std::optional<int> open_any();
 };
 
-bool ai_is_solvable(const Board& board);
+class BoardBuilder : public QObject {
+    Q_OBJECT
+
+    bool ai_is_solvable(const Board& board);
+    int attempts = 0;
+
+public:
+    BoardBuilder(QObject* parent = nullptr);
+
+    Board* generateLogicalBoard(std::function<Board*()> generator, std::optional<int> maxAttempts = std::make_optional(10));
+
+    bool aiCheck(const Board& board);
+
+signals:
+    void nextAttempt(int attempts);
+};
+
 }

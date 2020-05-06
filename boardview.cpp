@@ -209,6 +209,40 @@ void BoardView::mousePressEvent(QMouseEvent* event)
     judge();
 }
 
+void BoardView::setBoard(QSharedPointer<Board> board)
+{
+    this->board = board;
+    connect(this->board.get(), &Board::generationStarted, this, &BoardView::onGenerationStarted);
+    connect(this->board.get(), &Board::generationFinished, this, &BoardView::onGenerationFinished);
+    setDiscloseBombs(false);
+    update();
+    repaint();
+}
+
+void BoardView::onGenerationStarted()
+{
+    if (progressView != nullptr) {
+        qDebug("remove previous progress view");
+        progressView->deleteLater();
+        progressView = nullptr;
+    }
+
+    qDebug("showing new progress view");
+    progressView = new BoardGenerationProgress(this);
+    connect(this->board.get(), &Board::onAttempt, progressView, &BoardGenerationProgress::updateAttempts);
+    progressView->show();
+}
+
+void BoardView::onGenerationFinished()
+{
+    qDebug("removing progressView: %p", progressView);
+    if (progressView != nullptr) {
+        progressView->hide();
+        progressView->deleteLater();
+        progressView = nullptr;
+    }
+}
+
 void BoardView::judge()
 {
     if (board.isNull()) {

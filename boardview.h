@@ -2,6 +2,7 @@
 #define BOARDVIEW_H
 
 #include "board.h"
+#include "boardgenerationprogress.h"
 #include <QColor>
 #include <QPair>
 #include <QSharedPointer>
@@ -42,6 +43,8 @@ class BoardView : public QWidget {
 
     QPair<int, int> getIndexFromMouseCord(double x, double y) const;
 
+    BoardGenerationProgress* progressView = nullptr;
+
     void judge();
 
 public:
@@ -66,19 +69,16 @@ public:
     const bool& discloseBombs() const { return discloseBombs_; }
 
 public slots:
-    void setBoard(QSharedPointer<Board> board)
-    {
-        this->board = board;
-        setDiscloseBombs(false);
-        update();
-        repaint();
-    };
+    void setBoard(QSharedPointer<Board> board);
 
     void forceRedraw()
     {
         update();
         repaint();
     }
+
+    void onGenerationStarted();
+    void onGenerationFinished();
 };
 }
 

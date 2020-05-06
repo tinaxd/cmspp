@@ -50,13 +50,13 @@ bool MineAI::solve_all(QSharedPointer<Board> board,
     cb.before_start(board);
     int step = 0;
     while (true) {
-        ai->next_step(logging, cb);
-        if (!cb.on_step(board, step++, ai->assume_nest_level)) {
-            return false;
-        }
         if (board->cleared()) {
             return true;
         } else if (board->failed()) {
+            return false;
+        }
+        ai->next_step(logging, cb);
+        if (!cb.on_step(board, step++, ai->assume_nest_level)) {
             return false;
         }
     }
@@ -235,68 +235,50 @@ struct DoNothing : public AICallback {
     void before_start(const QSharedPointer<Board>&) override {};
     bool on_step(const QSharedPointer<Board>&, int, int) override { return true; };
 };
-
-//struct TimeoutSolver : public QObject {
-//    std::unique_ptr<Board> board;
-//    QThread* thread;
-//    std::optional<bool> result;
-//    TimeoutSolver(const Board& board)
-//        : QObject()
-//        , board(new Board(board))
-//    {
-//        thread = QThread::create([this]() {
-//            try {
-//                DoNothing cb;
-//                std::cout << std::endl;
-//                auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(*this->board)),
-//                    false, cb);
-//                this->result = std::make_optional(res);
-//            } catch (const AIReasoningError& e) {
-//                this->result = std::make_optional(false);
-//            }
-//        });
-//        thread->setParent(this);
-//        this->connect(this, &TimeoutSolver::timeout, this->thread, &QThread::terminate);
-//        thread->start();
-//    }
-
-//public slots:
-//    void timeout();
-//};
 }
 
-bool minesweeper::ai_is_solvable(const Board& board)
+BoardBuilder::BoardBuilder(QObject* parent)
+    : QObject(parent)
 {
-    //    std::optional<bool> result;
-    //    QThread* thread = QThread::create([&result, board = board]() {
-    //        try {
-    //            DoNothing cb;
-    //            std::cout << std::endl;
-    //            auto res = MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
-    //                false, cb);
-    //            result = std::make_optional(res);
-    //        } catch (const AIReasoningError& e) {
-    //            result = std::make_optional(false);
-    //        }
-    //    });
-    //    thread->start();
-    //    QThread::sleep(1);
-    //    thread->terminate();
-    //    thread->quit();
-    //    thread->deleteLater();
-    //    if (result.has_value()) {
-    //        return result.value();
-    //    }
-    //    qDebug("Solver timeout");
-    //    return false;
-    //    // TODO: thread 内の計算が終わったら、タイムアウトを待たずに終了する.
+}
 
+Board* BoardBuilder::generateLogicalBoard(std::function<Board*()> generator, std::optional<int> maxAttempts)
+{
+    while (true) {
+        attempts++;
+        if (maxAttempts.has_value() && maxAttempts.value() < attempts) {
+            return nullptr;
+        }
+
+        emit nextAttempt(attempts);
+
+        Board* board = generator();
+        if (board == nullptr) {
+            qDebug("generator fail");
+            continue;
+        }
+
+        if (aiCheck(*board)) {
+            qDebug("AI check success");
+            return board;
+        } else {
+            qDebug("AI check failed");
+            delete board;
+        }
+    }
+}
+
+bool BoardBuilder::aiCheck(const Board& board)
+{
+    board.show_game_state(std::cout, false);
+    std::cout << std::endl;
     try {
         DoNothing cb;
         std::cout << std::endl;
         return MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
             false, cb);
     } catch (const AIReasoningError& e) {
+        qDebug(e.what());
         return false;
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QObject>
 #include <QPair>
 #include <QVector>
 #include <iostream>
@@ -79,7 +80,9 @@ public:
     const bool& is_assumption() const { return assumption; }
 };
 
-class Board {
+class Board : public QObject {
+    Q_OBJECT
+
 protected:
     int width_;
     int height_;
@@ -142,12 +145,19 @@ public:
     void toggle_flag(int xIndex, int yIndex);
 
     int get_total_cells() const { return height_ * width_; }
+
+signals:
+    void generationStarted();
+    void onAttempt(int attempts);
+    void generationFinished();
 };
 
 class LazyInitBoard : public Board {
+    Q_OBJECT
+
 protected:
     bool beforeInit = true;
-    void generateActualBoard(int excludeCellIndex);
+    void generateActualBoard(int excludeCellIndex, bool openCell);
     bool ai_check;
 
     void initAll() override;

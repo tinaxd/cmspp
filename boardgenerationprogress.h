@@ -1,30 +1,23 @@
 #ifndef BOARDGENERATIONPROGRESS_H
 #define BOARDGENERATIONPROGRESS_H
 
-#include <QDialog>
-
-namespace Ui {
-class BoardGenerationProgress;
-}
+#include <wx/wx.h>
 
 namespace minesweeper {
 
-class BoardGenerationProgress : public QDialog
-{
-    Q_OBJECT
+wxDECLARE_EVENT(BGP_CANCELED, wxCommandEvent);
 
+class BoardGenerationProgress : public wxWindow
+{
 public:
-    explicit BoardGenerationProgress(QWidget *parent = nullptr);
+    explicit BoardGenerationProgress(wxWindow *parent, wxWindowID id);
     ~BoardGenerationProgress();
 
-private:
-    Ui::BoardGenerationProgress* ui;
-
-signals:
-    void onCancel();
-
-public slots:
+    void onCancel(wxCommandEvent &ev);
     void updateAttempts(int attempts);
+
+private:
+    wxStaticText *lcd;
 };
 
 }

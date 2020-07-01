@@ -1,25 +1,34 @@
 #include "boardgenerationprogress.h"
-#include "ui_boardgenerationprogress.h"
-
-#include <QDialogButtonBox>
 
 using namespace minesweeper;
 
-BoardGenerationProgress::BoardGenerationProgress(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::BoardGenerationProgress)
-{
-    ui->setupUi(this);
+wxDEFINE_EVENT(BGP_CANCELED, wxCommandEvent);
 
-    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &BoardGenerationProgress::onCancel);
+BoardGenerationProgress::BoardGenerationProgress(wxWindow *parent, wxWindowID id) :
+    wxWindow(parent, id),
+    lcd(new wxStaticText(this, wxID_ANY, ""))
+{
+    auto *box = new wxBoxSizer(wxVERTICAL);
+    auto *cancel = new wxButton(this, wxID_ANY, "Cancel");
+    box->Add(lcd);
+    box->Add(cancel);
+    SetSizerAndFit(box);
+
+    cancel->Bind(wxEVT_BUTTON, &BoardGenerationProgress::onCancel, this);
 }
 
 BoardGenerationProgress::~BoardGenerationProgress()
 {
-    delete ui;
+}
+
+void BoardGenerationProgress::onCancel(wxCommandEvent&)
+{
+    wxCommandEvent cancel(BGP_CANCELED, GetId());
+    cancel.SetEventObject(this);
+    ProcessWindowEvent(cancel);
 }
 
 void BoardGenerationProgress::updateAttempts(int attempts)
 {
-    ui->lcdNumber->display(attempts);
+    lcd->SetLabelText(std::to_string(attempts));
 }

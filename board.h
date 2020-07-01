@@ -1,8 +1,7 @@
 #pragma once
 
-#include <QObject>
-#include <QPair>
-#include <QVector>
+#include <utility>
+#include <vector>
 #include <iostream>
 #include <optional>
 
@@ -80,18 +79,16 @@ public:
     const bool& is_assumption() const { return assumption; }
 };
 
-class Board : public QObject {
-    Q_OBJECT
-
+class Board {
 protected:
     int width_;
     int height_;
     int init_bombs_;
-    QVector<Cell> cells_;
+    std::vector<Cell> cells_;
     bool failed_ = false;
 
     void setup_cells(int width, int height, int n_bombs);
-    void setup_cells(int width, int height, int n_bombs, const QVector<int>& excludes);
+    void setup_cells(int width, int height, int n_bombs, const std::vector<int>& excludes);
     void build_neighbor_map();
     virtual void initAll();
 
@@ -100,11 +97,11 @@ protected:
     void open_cell4(int index);
 
 public:
-    using Point = QPair<int, int>;
+    using Point = std::pair<int, int>;
 
     Board(int width, int height, int n_bombs, bool initialize = true);
-    Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool ai_check = false);
-    Board(int width, int height, int n_bombs, const QVector<Point>& excludes, bool ai_check = false);
+    Board(int width, int height, int n_bombs, const std::vector<int>& excludes, bool ai_check = false);
+    Board(int width, int height, int n_bombs, const std::vector<Point>& excludes, bool ai_check = false);
     Board(const Board& board);
     Board(Board&& board);
     virtual ~Board();
@@ -153,8 +150,6 @@ signals:
 };
 
 class LazyInitBoard : public Board {
-    Q_OBJECT
-
 protected:
     bool beforeInit = true;
     void generateActualBoard(int excludeCellIndex, bool openCell);

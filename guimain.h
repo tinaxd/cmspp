@@ -2,45 +2,48 @@
 #define MINESWEEPER_GUIMAIN_H
 
 #include "boardview.h"
-#include <QMainWindow>
+#include <wx/wx.h>
+#include <memory>
 
-namespace Ui {
-class MainWindow;
-}
+namespace minesweeper
+{
 
-namespace minesweeper {
+    wxDECLARE_EVENT(MAIN_REDRAW_ALL, wxCommandEvent);
+    struct BoardReplaceEvent : wxEvent
+    {
+    public:
+        BoardReplaceEvent(wxEventType eventType, int winid, std::shared_ptr<Board> newBoard)
+            : wxEvent(winid, eventType), newBoard(std::move(newBoard)) {}
 
-struct MainCallback : public WinLoseAction {
-    // WinLoseAction interface
-public:
-    ~MainCallback() {}
-    void onWin(BoardView& bv) override;
-    void onLose(BoardView& bv) override;
-};
+        virtual wxEvent *Clone() const { return new BoardReplaceEvent(*this); }
 
-class GuiMain : public QMainWindow {
-    Q_OBJECT
+    private:
+        std::shared_ptr<Board> newBoard;
+    };
 
-    Ui::MainWindow* ui;
-    QSharedPointer<Board> board;
+    struct MainCallback : public WinLoseAction
+    {
+        // WinLoseAction interface
+    public:
+        ~MainCallback() {}
+        void onWin(BoardView &bv) override;
+        void onLose(BoardView &bv) override;
+    };
 
-public:
-    GuiMain(QWidget* parent = nullptr);
+    class GuiMain : public wxFrame
+    {
+        std::shared_ptr<Board> board;
 
-    void autoSolve(double intervalSeconds);
+    public:
+        GuiMain();
 
-signals:
-    void redrawAll();
-    void replaceBoard(QSharedPointer<Board> newBoard);
+        void autoSolve(double intervalSeconds);
 
-public slots:
-    void newGame(int width, int height, int n_bombs);
-    void showNewGameWindow();
-    void startAutoSolve();
-};
+        void newGame(int width, int height, int n_bombs);
+        void showNewGameWindow();
+        void startAutoSolve();
+    };
 
 } // namespace minesweeper
-
-Q_DECLARE_METATYPE(QSharedPointer<minesweeper::Board>)
 
 #endif // MINESWEEPER_GUIMAIN_H

@@ -1,50 +1,49 @@
 #include "boardview.h"
-#include <QBrush>
-#include <QMouseEvent>
-#include <QPainter>
-#include <QPen>
 
 using namespace minesweeper;
 
-const QColor BoardView::CLOSED_COLOR { 0xa9, 0xa9, 0xa9 };
-const QColor BoardView::OPENED_COLOR { 0x00, 0x64, 0x00 };
-const QColor BoardView::FLAGGED_COLOR { 0xff, 0x45, 0x00 };
-const QColor BoardView::BACKGROUND_COLOR { 0xd3, 0xd3, 0xd3 };
-const QColor BoardView::HIGHLIGHT_COLOR { 0xad, 0xd8, 0xe6 };
-const QColor BoardView::LINE_COLOR { 0xf0, 0xf8, 0xff };
+const wxColour BoardView::CLOSED_COLOR{0xa9, 0xa9, 0xa9};
+const wxColour BoardView::OPENED_COLOR{0x00, 0x64, 0x00};
+const wxColour BoardView::FLAGGED_COLOR{0xff, 0x45, 0x00};
+const wxColour BoardView::BACKGROUND_COLOR{0xd3, 0xd3, 0xd3};
+const wxColour BoardView::HIGHLIGHT_COLOR{0xad, 0xd8, 0xe6};
+const wxColour BoardView::LINE_COLOR{0xf0, 0xf8, 0xff};
 //const QColor BoardView::ASSUMED_OPENED_COLOR { 0xa4, 0xd6, 0xa4 };
-const QColor BoardView::ASSUMED_FLAGGED_COLOR { 0xbf, 0xb2, 0x5f };
+const wxColour BoardView::ASSUMED_FLAGGED_COLOR{0xbf, 0xb2, 0x5f};
 
-BoardView::BoardView(QWidget* parent)
-    : QWidget(parent)
+BoardView::BoardView(wxWindow *parent,
+                     wxWindowID id)
+    : wxWindow(parent, id)
 {
-    setMouseTracking(true);
+    //setMouseTracking(true);
 }
 
-QSize BoardView::sizeHint() const
+// QSize BoardView::sizeHint() const
+// {
+//     if (board.isNull())
+//     {
+//         return QSize(cellWidth, cellHeight);
+//     }
+//     return QSize(cellWidth * board->width(), cellHeight * board->height());
+// }
+
+// QSize BoardView::minimumSizeHint() const
+// {
+//     return sizeHint();
+// }
+
+void BoardView::onPaint(wxPaintEvent &ev)
 {
-    if (board.isNull()) {
-        return QSize(cellWidth, cellHeight);
-    }
-    return QSize(cellWidth * board->width(), cellHeight * board->height());
-}
+    wxPaintDC painter(this);
 
-QSize BoardView::minimumSizeHint() const
-{
-    return sizeHint();
-}
+    const double width = this->GetClientSize().GetWidth();
+    const double height = this->GetClientSize().GetHeight();
 
-void BoardView::paintEvent(QPaintEvent*)
-{
-    QPainter painter(this);
+    painter.SetBrush(BACKGROUND_COLOR);
+    painter.DrawRectangle(0, 0, width, height);
 
-    const double width = this->width();
-    const double height = this->height();
-
-    painter.setBrush(BACKGROUND_COLOR);
-    painter.drawRect(0, 0, width, height);
-
-    if (board.isNull()) {
+    if (!board)
+    {
         return;
     }
 
@@ -56,60 +55,71 @@ void BoardView::paintEvent(QPaintEvent*)
 
     const double margin = 5.0;
 
-    painter.setPen(LINE_COLOR);
-    QFont font;
-    font.setPointSize(24);
-    painter.setFont(font);
+    painter.SetPen(LINE_COLOR);
+    painter.SetFont(wxFont(24, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_LIGHT));
 
-    for (auto x = 0; x < nColumns; x++) {
-        for (auto y = 0; y < nRows; y++) {
+    for (auto x = 0; x < nColumns; x++)
+    {
+        for (auto y = 0; y < nRows; y++)
+        {
             auto cellIndex = board->from_point(x, y);
             auto initX = (width * x) / nColumns;
             auto initY = (height * y) / nRows;
             auto drawNumber = false;
             auto flagged = false;
 
-            auto& cell = (*board)[cellIndex];
-            switch (cell.state()) {
+            auto &cell = (*board)[cellIndex];
+            switch (cell.state())
+            {
             case CellState::Closed:
-                if (highlightedCell.has_value() && highlightedCell.value() == cellIndex) {
-                    painter.setBrush(HIGHLIGHT_COLOR);
-                } else {
-                    painter.setBrush(CLOSED_COLOR);
+                if (highlightedCell.has_value() && highlightedCell.value() == cellIndex)
+                {
+                    painter.SetBrush(HIGHLIGHT_COLOR);
+                }
+                else
+                {
+                    painter.SetBrush(CLOSED_COLOR);
                 }
                 break;
             case CellState::Flagged:
-                painter.setBrush(CLOSED_COLOR);
+                painter.SetBrush(CLOSED_COLOR);
                 flagged = true;
                 break;
             case CellState::Opened:
                 drawNumber = true;
-                painter.setBrush(OPENED_COLOR);
+                painter.SetBrush(OPENED_COLOR);
                 break;
             }
 
-            painter.drawRect(initX, initY, cellWidth - margin, cellHeight - margin);
+            painter.DrawRectangle(initX, initY, cellWidth - margin, cellHeight - margin);
 
-            if (drawNumber) {
-                painter.setBrush(QColor(0xdb, 0x70, 0x93));
-                painter.setPen(QColor(0xdb, 0x70, 0x93));
-                if (cell.is_assumption()) {
-                    auto text = QString::fromStdString("?");
-                    painter.drawText(QPointF { initX + (cellWidth / 3), initY + (cellHeight / 2) }, text);
-                } else {
+            if (drawNumber)
+            {
+                painter.SetBrush(wxColour(0xdb, 0x70, 0x93));
+                painter.SetPen(wxColour(0xdb, 0x70, 0x93));
+                if (cell.is_assumption())
+                {
+                    painter.DrawText("?", wxRealPoint{initX + (cellWidth / 3), initY + (cellHeight / 2)});
+                }
+                else
+                {
                     int bombs = cell.neighbor_bombs();
-                    if (bombs != 0) {
-                        auto text = QString::fromStdString(std::to_string(bombs));
-                        painter.drawText(QPointF { initX + (cellWidth / 3), initY + (cellHeight / 2) }, text);
+                    if (bombs != 0)
+                    {
+                        painter.DrawText(std::to_string(bombs), wxRealPoint{initX + (cellWidth / 3), initY + (cellHeight / 2)});
                     }
                 }
             }
 
-            if (flagged) {
-                if (cell.is_assumption()) {
-                    painter.setBrush(ASSUMED_FLAGGED_COLOR);
-                } else {
-                    painter.setBrush(FLAGGED_COLOR);
+            if (flagged)
+            {
+                if (cell.is_assumption())
+                {
+                    painter.SetBrush(ASSUMED_FLAGGED_COLOR);
+                }
+                else
+                {
+                    painter.SetBrush(FLAGGED_COLOR);
                 }
                 auto cellWidthM = cellWidth - margin;
                 auto cellHeightM = cellHeight - margin;
@@ -117,27 +127,29 @@ void BoardView::paintEvent(QPaintEvent*)
                 auto flagHeight = cellHeightM / 2.0;
                 auto initFX = initX + (cellWidthM / 4.0);
                 auto initFY = initY + (cellHeightM / 4.0);
-                painter.drawRect(initFX, initFY, flagWidth, flagHeight);
+                painter.DrawRectangle(initFX, initFY, flagWidth, flagHeight);
             }
 
-            if (discloseBombs_ && cell.has_bomb()) {
-                painter.setPen(LINE_COLOR);
+            if (discloseBombs_ && cell.has_bomb())
+            {
+                painter.SetPen(LINE_COLOR);
                 auto cellWidthM = cellWidth - margin;
                 auto cellHeightM = cellHeight - margin;
-                QPointF p1 { initX + (cellWidthM / 5.0), initY + (cellHeightM / 5.0) };
-                QPointF p2 { initX + (cellWidthM * 4.0 / 5.0), initY + (cellHeightM * 4.0 / 5.0) };
-                QPointF p3 { initX + (cellWidthM * 4.0 / 5.0), initY + (cellWidthM / 5.0) };
-                QPointF p4 { initX + (cellWidthM / 5.0), initY + (cellHeightM * 4.0 / 5.0) };
-                painter.drawLines(QVector<QLineF> { QLineF(p1, p2), QLineF(p3, p4) });
+                wxRealPoint p1{initX + (cellWidthM / 5.0), initY + (cellHeightM / 5.0)};
+                wxRealPoint p2{initX + (cellWidthM * 4.0 / 5.0), initY + (cellHeightM * 4.0 / 5.0)};
+                wxRealPoint p3{initX + (cellWidthM * 4.0 / 5.0), initY + (cellWidthM / 5.0)};
+                wxRealPoint p4{initX + (cellWidthM / 5.0), initY + (cellHeightM * 4.0 / 5.0)};
+                painter.DrawLine(p1, p2);
+                painter.DrawLine(p3, p4);
             }
         }
     }
 }
 
-QPair<int, int> BoardView::getIndexFromMouseCord(double x, double y) const
+std::pair<int, int> BoardView::getIndexFromMouseCord(double x, double y) const
 {
-    const auto width = static_cast<double>(this->width());
-    const auto height = static_cast<double>(this->height());
+    const auto width = static_cast<double>(this->GetClientSize().GetWidth());
+    const auto height = static_cast<double>(this->GetClientSize().GetHeight());
 
     const auto nColumns = board->width();
     const auto nRows = board->height();
@@ -145,117 +157,131 @@ QPair<int, int> BoardView::getIndexFromMouseCord(double x, double y) const
     const auto cellWidth = width / nColumns;
     const auto cellHeight = height / nRows;
 
-    return qMakePair<int, int>(static_cast<int>(x / cellWidth), static_cast<int>(y / cellHeight));
+    return std::make_pair<int, int>(static_cast<int>(x / cellWidth), static_cast<int>(y / cellHeight));
 }
 
-void BoardView::mouseMoveEvent(QMouseEvent* event)
+void BoardView::onMove(wxMouseEvent &ev)
 {
-    if (board.isNull()) {
+    if (!board)
+    {
         highlightedCell = std::optional<int>();
         return;
     }
 
-    const auto x = event->x();
-    const auto y = event->y();
+    const auto x = ev.GetX();
+    const auto y = ev.GetY();
 
     const auto res = getIndexFromMouseCord(x, y);
 
     const auto xIndex = res.first;
     const auto yIndex = res.second;
 
-    if (xIndex < 0 || xIndex >= board->width() || yIndex < 0 || yIndex >= board->height()) {
+    if (xIndex < 0 || xIndex >= board->width() || yIndex < 0 || yIndex >= board->height())
+    {
         highlightedCell = std::optional<int>();
         return;
     }
 
     highlightedCell = std::make_optional(board->from_point(xIndex, yIndex));
-    update();
-    repaint();
+    Refresh();
 }
 
-void BoardView::mousePressEvent(QMouseEvent* event)
+void BoardView::onClick(wxMouseEvent &ev)
 {
-    if (board.isNull()) {
+    if (!board)
+    {
         return;
     }
 
-    const auto x = event->x();
-    const auto y = event->y();
-    qDebug("clicked: %d %d", x, y);
+    const auto x = ev.GetX();
+    const auto y = ev.GetY();
+    std::cerr << "clicked: " << x << " " << y << std::endl;
 
     const auto res = getIndexFromMouseCord(x, y);
 
     const auto xIndex = res.first;
     const auto yIndex = res.second;
 
-    if (xIndex < 0 || xIndex >= board->width() || yIndex < 0 || yIndex >= board->height()) {
-        qDebug("ignore click");
+    if (xIndex < 0 || xIndex >= board->width() || yIndex < 0 || yIndex >= board->height())
+    {
+        std::cerr << "ignore click" << std::endl;
         return;
     }
 
-    if (event->button() == Qt::LeftButton) {
-        if ((*board)[res].state() == CellState::Flagged) {
-            qDebug("flag block");
-        } else {
-            qDebug("open cell %d %d", xIndex, yIndex);
+    if (ev.GetButton() == wxMOUSE_BTN_LEFT)
+    {
+        if ((*board)[res].state() == CellState::Flagged)
+        {
+            std::cout << "flag block" << std::endl;
+        }
+        else
+        {
+            std::cout << "open cell " << xIndex << " " << yIndex << std::endl;
             board->open_cell(xIndex, yIndex);
         }
-    } else if (event->button() == Qt::RightButton) {
-        qDebug("toggle-flag cell %d %d", xIndex, yIndex);
+    }
+    else if (ev.GetButton() == wxMOUSE_BTN_RIGHT)
+    {
+        std::cout << "toggle-flag cell " << xIndex << " " << yIndex << std::endl;
         board->toggle_flag(xIndex, yIndex);
     }
-    update();
-    repaint();
+    Refresh();
     judge();
 }
 
-void BoardView::setBoard(QSharedPointer<Board> board)
+void BoardView::setBoard(std::shared_ptr<Board> board)
 {
     this->board = board;
     connect(this->board.get(), &Board::generationStarted, this, &BoardView::onGenerationStarted);
     connect(this->board.get(), &Board::generationFinished, this, &BoardView::onGenerationFinished);
     setDiscloseBombs(false);
-    update();
-    repaint();
+    Refresh();
 }
 
 void BoardView::onGenerationStarted()
 {
-    if (progressView != nullptr) {
-        qDebug("remove previous progress view");
-        progressView->deleteLater();
+    if (progressView != nullptr)
+    {
+        std::cerr << "remove previous progress view" << std::endl;
+        progressView->Destroy();
         progressView = nullptr;
     }
 
-    qDebug("showing new progress view");
-    progressView = new BoardGenerationProgress(this);
+    std::cerr << "showing new progress view" << std::endl;
+    progressView = new BoardGenerationProgress(this, wxID_ANY);
     connect(this->board.get(), &Board::onAttempt, progressView, &BoardGenerationProgress::updateAttempts);
-    progressView->show();
+    progressView->Show();
 }
 
 void BoardView::onGenerationFinished()
 {
-    qDebug("removing progressView: %p", progressView);
-    if (progressView != nullptr) {
-        progressView->hide();
-        progressView->deleteLater();
+    std::cerr << "removing progressView: " << progressView << std::endl;
+    if (progressView != nullptr)
+    {
+        progressView->Hide();
+        progressView->Destroy();
         progressView = nullptr;
     }
 }
 
 void BoardView::judge()
 {
-    if (board.isNull()) {
+    if (!board)
+    {
         return;
     }
 
-    if (finalAction == nullptr) {
+    if (finalAction == nullptr)
+    {
         return;
     }
 
-    if (board->failed()) {
+    if (board->failed())
+    {
         finalAction->onLose(*this);
-    } else if (board->cleared()) {
+    }
+    else if (board->cleared())
+    {
         finalAction->onWin(*this);
     }
 }

@@ -3,12 +3,11 @@
 #include "board.h"
 #include "boardconfigview.h"
 #include "boardview.h"
-#include "ui_mainwindow.h"
-#include <QMessageBox>
-#include <QString>
-#include <QThread>
 
 namespace minesweeper {
+
+wxDEFINE_EVENT(MAIN_REDRAW_ALL, wxCommandEvent);
+wxDEFINE_EVENT(MAIN_REPLACE_BOARD, BoardReplaceEvent);
 
 struct RedrawCallback : public AICallback {
 private:
@@ -26,11 +25,11 @@ public:
 
     // AICallback interface
 public:
-    void before_start(const QSharedPointer<Board>&) override
+    void before_start(const std::shared_ptr<Board>&) override
     {
     }
 
-    bool on_step(const QSharedPointer<Board>& board, int /*current_step*/, int nest_level) override
+    bool on_step(const std::shared_ptr<Board>& board, int /*current_step*/, int nest_level) override
     {
         if (board->failed() || board->cleared())
             return false;
@@ -43,15 +42,10 @@ public:
     }
 };
 
-GuiMain::GuiMain(QWidget* parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+GuiMain::GuiMain()
+    : wxFrame(nullptr, wxID_ANY, "Logical Sweeper")
 {
-    ui->setupUi(this);
-    qRegisterMetaType<QSharedPointer<Board>>("QSharedPointer<Board>");
-
-    setGeometry(30, 30, 700, 700);
-    setWindowTitle("Cane MineSweeper");
+    SetSize({700, 700});
 
     connect(this, &GuiMain::redrawAll, ui->centralwidget, &BoardView::forceRedraw);
     connect(this, &GuiMain::replaceBoard, ui->centralwidget, &BoardView::setBoard);
@@ -79,8 +73,10 @@ void GuiMain::autoSolve(double intervalSeconds)
 
 void GuiMain::newGame(int width, int height, int n_bombs)
 {
-    board = QSharedPointer<Board>(new LazyInitBoard(width, height, n_bombs, true));
-    emit replaceBoard(board);
+    board = std::shared_ptr<Board>(new LazyInitBoard(width, height, n_bombs, true));
+    BoardReplaceEvent event(MAIN_REPLACE_BOARD, GetId(), board);
+    event.SetEventObject(this);
+    ProcessWindowEvent(event);
 }
 
 void GuiMain::showNewGameWindow()

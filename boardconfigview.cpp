@@ -1,56 +1,87 @@
 #include "boardconfigview.h"
-#include "ui_boardconfigview.h"
-#include <QDialogButtonBox>
 
 using namespace minesweeper;
 
-BoardConfigView::BoardConfigView(QWidget* parent)
-    : QDialog(parent)
-    , ui(new Ui::BoardConfigView)
+wxDEFINE_EVENT(BOARDCONFIG_FINISH, BoardReplaceEvent);
+wxDEFINE_EVENT(BOARDCONFIG_CANCELED, BoardReplaceEvent);
+
+BoardConfigView::BoardConfigView(wxWindow *parent, wxWindowID id)
+    : wxWindow(parent, id),
+      widthInput(new wxTextCtrl(this, wxID_ANY)),
+      heightInput(new wxTextCtrl(this, wxID_ANY)),
+      bombsInput(new wxTextCtrl(this, wxID_ANY))
 {
-    ui->setupUi(this);
-    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &BoardConfigView::onOkButton);
-    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &BoardConfigView::onCancelButton);
+    auto *box = new wxBoxSizer(wxVERTICAL);
+
+    auto *widthBox = new wxBoxSizer(wxHORIZONTAL);
+    widthBox->Add(new wxStaticText(this, wxID_ANY, "Width"));
+    widthBox->Add(widthInput);
+    auto *heightBox = new wxBoxSizer(wxHORIZONTAL);
+    heightBox->Add(new wxStaticText(this, wxID_ANY, "Height"));
+    heightBox->Add(heightInput);
+    auto *bombBox = new wxBoxSizer(wxHORIZONTAL);
+    bombBox->Add(new wxStaticText(this, wxID_ANY, "Bombs"));
+    bombBox->Add(bombsInput);
+
+    box->Add(widthBox);
+    box->Add(heightBox);
+    box->Add(bombBox);
+    SetSizerAndFit(box);
+
+    okButton->Bind(wxEVT_BUTTON, &BoardConfigView::onOkButton, this);
+    cancelButton->Bind(wxEVT_BUTTON, &BoardConfigView::onCancelButton, this);
 }
 
 BoardConfigView::~BoardConfigView()
 {
-    delete ui;
 }
 
 std::optional<BoardConfigView::Data> BoardConfigView::validate() const
 {
-    const auto& widthText = ui->widthInput->text();
-    const auto& heightText = ui->heightInput->text();
-    const auto& bombsText = ui->bombsInput->text();
-    try {
-        int width = std::stoi(widthText.toStdString());
-        int height = std::stoi(heightText.toStdString());
-        int bombs = std::stoi(bombsText.toStdString());
+    const auto &widthText = widthInput->GetLineText(0);
+    const auto &heightText = heightInput->GetLineText(0);
+    const auto &bombsText = bombsInput->GetLineText(0);
+    try
+    {
+        int width = std::stoi(widthText.ToStdString());
+        int height = std::stoi(heightText.ToStdString());
+        int bombs = std::stoi(bombsText.ToStdString());
         return std::make_optional(Data(width, height, bombs));
-    } catch (const std::invalid_argument& e) {
+    }
+    catch (const std::invalid_argument &e)
+    {
         return std::optional<Data>();
-    } catch (const std::out_of_range& e2) {
+    }
+    catch (const std::out_of_range &e2)
+    {
         return std::optional<Data>();
     }
 }
 
-void BoardConfigView::onOkButton()
+void BoardConfigView::onOkButton(wxCommandEvent &)
 {
-    const auto& data = validate();
-    if (data.has_value()) {
-        const auto& d = data.value();
+    const auto &data = validate();
+    if (data.has_value())
+    {
+        const auto &d = data.value();
         int width = std::get<0>(d);
         int height = std::get<1>(d);
         int bombs = std::get<2>(d);
-        qDebug("validate success %d %d %d", width, height, bombs);
-        emit onFinish(width, height, bombs);
-    } else {
-        qDebug("invalid values");
+        std::cout << "validate success " << width << " " << height << " " << bombs << std::endl;
+
+        BoardReplaceEvent event(BOARDCONFIG_FINISH, GetId(), width, height, bombs);
+        event.SetEventObject(this);
+        ProcessWindowEvent(event);
+    }
+    else
+    {
+        std::cerr << "invalid values" << std::endl;
     }
 }
 
-void BoardConfigView::onCancelButton()
+void BoardConfigView::onCancelButton(wxCommandEvent &)
 {
-    emit onCancel();
+    BoardReplaceEvent event(BOARDCONFIG_CANCELED, GetId());
+    event.SetEventObject(this);
+    ProcessWindowEvent(event);
 }

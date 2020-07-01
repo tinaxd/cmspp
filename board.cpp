@@ -1,18 +1,17 @@
 #include "board.h"
 #include "ai.h"
-#include <QEventLoop>
-#include <QThread>
 #include <array>
 #include <random>
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <optional>
+#include <iostream>
 
 using namespace minesweeper;
 
 Board::Board(int width, int height, int n_bombs, bool initialize)
-    : QObject()
-    , width_(width)
+    : width_(width)
     , height_(height)
     , init_bombs_(n_bombs)
 {
@@ -25,14 +24,13 @@ Board::Board(int width, int height, int n_bombs, bool initialize)
     } else {
         auto cells = width * height;
         for (auto i = 0; i < cells; i++) {
-            cells_.append(Cell(false));
+            cells_.push_back(Cell(false));
         }
     }
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool ai_check)
-    : QObject()
-    , width_(width)
+Board::Board(int width, int height, int n_bombs, const std::vector<int>& excludes, bool ai_check)
+    : width_(width)
     , height_(height)
     , init_bombs_(n_bombs)
 {
@@ -42,9 +40,9 @@ Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, b
 
     // TODO: when ai_check == false
     BoardBuilder builder;
-    QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
-        qDebug("Attempt #%d", attempts);
-    });
+    // QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
+    //     qDebug("Attempt #%d", attempts);
+    // });
     auto newBoard = dynamic_cast<Board*>(builder.generateLogicalBoard([self = *this, excludes]() {
         auto* b = new Board(self);
         b->initAll();
@@ -57,29 +55,29 @@ Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, b
     },
         std::optional<int>() /* unlimited */));
     if (newBoard == nullptr) {
-        qDebug("could not generate new board");
+        std::cerr << "could not generate new board" << std::endl;
         return;
     }
     *this = std::move(*newBoard);
     delete newBoard;
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes, bool ai_check)
+Board::Board(int width, int height, int n_bombs, const std::vector<Board::Point>& excludes, bool ai_check)
 {
     if (n_bombs >= width * height - excludes.size()) {
         throw std::runtime_error("illegal arguments");
     }
 
-    QVector<int> excludes_index;
+    std::vector<int> excludes_index;
     for (const auto& ex : excludes) {
-        excludes_index.append(from_point(ex));
+        excludes_index.push_back(from_point(ex));
     }
 
     // TODO: when ai_check == false
     BoardBuilder builder;
-    QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
-        qDebug("Attempt #%d", attempts);
-    });
+    // QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
+    //     qDebug("Attempt #%d", attempts);
+    // });
     auto newBoard = dynamic_cast<Board*>(builder.generateLogicalBoard([self = *this, &excludes_index]() {
         auto* b = new Board(self);
         b->initAll();
@@ -92,7 +90,7 @@ Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& ex
     },
         std::optional<int>() /* unlimited */));
     if (newBoard == nullptr) {
-        qDebug("could not generate new board");
+        std::cerr << "could not generate new board" << std::endl;
         return;
     }
     *this = std::move(*newBoard);
@@ -100,8 +98,7 @@ Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& ex
 }
 
 Board::Board(const Board& board)
-    : QObject()
-    , width_(board.width_)
+    : width_(board.width_)
     , height_(board.height_)
     , init_bombs_(board.init_bombs_)
     , failed_(board.failed_)
@@ -110,8 +107,7 @@ Board::Board(const Board& board)
 }
 
 Board::Board(Board&& board)
-    : QObject()
-    , width_(board.width_)
+    : width_(board.width_)
     , height_(board.height_)
     , init_bombs_(board.init_bombs_)
     , failed_(board.failed_)
@@ -147,10 +143,10 @@ Board::operator=(Board&& board)
 
 void Board::setup_cells(int width, int height, int n_bombs)
 {
-    setup_cells(width, height, n_bombs, QVector<int>());
+    setup_cells(width, height, n_bombs, std::vector<int>());
 }
 
-void Board::setup_cells(int width, int height, int n_bombs, const QVector<int>& excludes)
+void Board::setup_cells(int width, int height, int n_bombs, const std::vector<int>& excludes)
 {
     std::random_device seeder;
     std::mt19937 random;
@@ -158,13 +154,13 @@ void Board::setup_cells(int width, int height, int n_bombs, const QVector<int>& 
 
     auto cells = width * height;
     for (auto i = 0; i < cells; i++) {
-        cells_.append(Cell(false));
+        cells_.push_back(Cell(false));
     }
 
-    QVector<size_t> bomb_indices;
+    std::vector<size_t> bomb_indices;
     for (auto i = 0; i < cells; i++) {
-        if (!excludes.contains(i)) {
-            bomb_indices.append(i);
+        if (std::find(excludes.cbegin(), excludes.cend(), i) == excludes.cend()) {
+            bomb_indices.push_back(i);
         }
     }
 
@@ -240,7 +236,7 @@ Board::get_cell_index(int base, Direction direction)
 Board::Point
 Board::from_index(int index) const
 {
-    return qMakePair<int, int>(index % width_, index / height_);
+    return std::make_pair<int, int>(index % width_, index / height_);
 }
 
 int Board::from_point(const Board::Point& point) const
@@ -403,7 +399,7 @@ void LazyInitBoard::generateActualBoard(int excludeCellIndex, bool openCell)
         emit this->generationFinished();
 
         if (newBoard == nullptr) {
-            qDebug("could not generate new board");
+            std::cerr << "could not generate new board" << std::endl;
             return;
         }
         *this = std::move(*newBoard);

@@ -1,8 +1,5 @@
 #include "ai.h"
-#include <QEventLoop>
-#include <QPair>
-#include <QThread>
-#include <QTimer>
+#include <utility>
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -10,7 +7,7 @@
 
 using namespace minesweeper;
 
-MineAI::MineAI(QSharedPointer<Board> board)
+MineAI::MineAI(std::shared_ptr<Board> board)
     : board(std::move(board))
 {
 }
@@ -31,12 +28,12 @@ MineAI::open_any()
     return std::optional<int>();
 }
 
-bool MineAI::solve_all(QSharedPointer<Board> board, bool logging, AICallback& cb)
+bool MineAI::solve_all(std::shared_ptr<Board> board, bool logging, AICallback& cb)
 {
     return solve_all(std::move(board), logging, cb, 0);
 }
 
-bool MineAI::solve_all(QSharedPointer<Board> board,
+bool MineAI::solve_all(std::shared_ptr<Board> board,
     bool logging,
     AICallback& cb,
     int nest_level)
@@ -105,11 +102,11 @@ void MineAI::next_step(bool logging, AICallback& cb)
         if (cell.opened() && !cell.is_assumption()) {
             auto bombs_around = cell.neighbor_bombs();
 
-            std::vector<QPair<Cell*, int>> neighbors;
+            std::vector<std::pair<Cell*, int>> neighbors;
             for (auto dir : ALL_DIRECTIONS) {
                 auto index = board->get_cell_index(i, dir);
                 if (index.has_value()) {
-                    neighbors.push_back(qMakePair(&(*board)[index.value()], index.value()));
+                    neighbors.push_back(std::make_pair(&(*board)[index.value()], index.value()));
                 }
             }
             int closed_cells_around = 0;
@@ -204,7 +201,7 @@ void MineAI::next_step(bool logging, AICallback& cb)
             std::cout << "ASSUME closed cell as flagged (entering level "
                       << assume_nest_level + 1 << ") " << i << std::endl;
         }
-        auto new_board = QSharedPointer<Board>(new Board(*board));
+        auto new_board = std::make_shared<Board>(*board);
         (*new_board)[i].state() = CellState::Flagged;
         (*new_board)[i].is_assumption() = true;
         try {
@@ -232,14 +229,9 @@ void MineAI::next_step(bool logging, AICallback& cb)
 
 namespace minesweeper {
 struct DoNothing : public AICallback {
-    void before_start(const QSharedPointer<Board>&) override {};
-    bool on_step(const QSharedPointer<Board>&, int, int) override { return true; };
+    void before_start(const std::shared_ptr<Board>&) override {};
+    bool on_step(const std::shared_ptr<Board>&, int, int) override { return true; };
 };
-}
-
-BoardBuilder::BoardBuilder(QObject* parent)
-    : QObject(parent)
-{
 }
 
 Board* BoardBuilder::generateLogicalBoard(std::function<Board*()> generator, std::optional<int> maxAttempts)
@@ -250,19 +242,19 @@ Board* BoardBuilder::generateLogicalBoard(std::function<Board*()> generator, std
             return nullptr;
         }
 
-        emit nextAttempt(attempts);
+        // emit nextAttempt(attempts);
 
         Board* board = generator();
         if (board == nullptr) {
-            qDebug("generator fail");
+            std::cerr << "generator fail" << std::endl;
             continue;
         }
 
         if (aiCheck(*board)) {
-            qDebug("AI check success");
+            std::cerr << "AI check success" << std::endl;
             return board;
         } else {
-            qDebug("AI check failed");
+            std::cerr << "AI check failed" << std::endl;
             delete board;
         }
     }
@@ -275,10 +267,10 @@ bool BoardBuilder::aiCheck(const Board& board)
     try {
         DoNothing cb;
         std::cout << std::endl;
-        return MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
+        return MineAI::solve_all(std::make_shared<Board>(board),
             false, cb);
     } catch (const AIReasoningError& e) {
-        qDebug(e.what());
+        std::cerr << e.what() << std::endl;
         return false;
     }
 }

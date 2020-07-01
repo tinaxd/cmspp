@@ -1,7 +1,7 @@
 #pragma once
 
 #include "board.h"
-#include <QSharedPointer>
+#include <memory>
 #include <array>
 #include <functional>
 #include <optional>
@@ -24,28 +24,28 @@ constexpr std::array<Direction, 8> ALL_DIRECTIONS = {
 };
 
 struct AICallback {
-    virtual void before_start(const QSharedPointer<Board>& board) = 0;
-    virtual bool on_step(const QSharedPointer<Board>& board, int current_step, int nest_level) = 0;
+    virtual void before_start(const std::shared_ptr<Board>& board) = 0;
+    virtual bool on_step(const std::shared_ptr<Board>& board, int current_step, int nest_level) = 0;
 };
 
 class MineAI {
-    QSharedPointer<Board> board;
+    std::shared_ptr<Board> board;
     bool log_enabled;
     bool firsttime = true;
     int assume_nest_level = 0;
 
 public:
-    MineAI(QSharedPointer<Board> board);
+    MineAI(std::shared_ptr<Board> board);
 
     bool& logging() { return log_enabled; }
     const bool& logging() const { return log_enabled; }
 
     void next_step(bool logging, AICallback& cb);
 
-    bool static solve_all(QSharedPointer<Board> board,
+    bool static solve_all(std::shared_ptr<Board> board,
         bool logging,
         AICallback& cb);
-    bool static solve_all(QSharedPointer<Board> board,
+    bool static solve_all(std::shared_ptr<Board> board,
         bool logging,
         AICallback& cb,
         int nest_level);
@@ -53,21 +53,16 @@ public:
     std::optional<int> open_any();
 };
 
-class BoardBuilder : public QObject {
-    Q_OBJECT
-
+class BoardBuilder {
     bool ai_is_solvable(const Board& board);
     int attempts = 0;
 
 public:
-    BoardBuilder(QObject* parent = nullptr);
-
     Board* generateLogicalBoard(std::function<Board*()> generator, std::optional<int> maxAttempts = std::make_optional(10));
 
     bool aiCheck(const Board& board);
 
-signals:
-    void nextAttempt(int attempts);
+    // signal: void nextAttempt(int attempts);
 };
 
 }

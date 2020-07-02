@@ -11,30 +11,32 @@
 using namespace minesweeper;
 
 Board::Board(int width, int height, int n_bombs, bool initialize)
-    : width_(width)
-    , height_(height)
-    , init_bombs_(n_bombs)
+    : width_(width), height_(height), init_bombs_(n_bombs)
 {
-    if (width <= 0 || height <= 0 || n_bombs < 0 || n_bombs >= width * height) {
+    if (width <= 0 || height <= 0 || n_bombs < 0 || n_bombs >= width * height)
+    {
         throw std::runtime_error("illegal arguments");
     }
-    if (initialize) {
+    if (initialize)
+    {
         setup_cells(width, height, n_bombs);
         build_neighbor_map();
-    } else {
+    }
+    else
+    {
         auto cells = width * height;
-        for (auto i = 0; i < cells; i++) {
+        for (auto i = 0; i < cells; i++)
+        {
             cells_.push_back(Cell(false));
         }
     }
 }
 
-Board::Board(int width, int height, int n_bombs, const std::vector<int>& excludes, bool ai_check)
-    : width_(width)
-    , height_(height)
-    , init_bombs_(n_bombs)
+Board::Board(int width, int height, int n_bombs, const std::vector<int> &excludes, bool ai_check)
+    : width_(width), height_(height), init_bombs_(n_bombs)
 {
-    if (n_bombs >= width * height - excludes.size()) {
+    if (n_bombs >= width * height - excludes.size())
+    {
         throw std::runtime_error("illegal arguments");
     }
 
@@ -43,18 +45,20 @@ Board::Board(int width, int height, int n_bombs, const std::vector<int>& exclude
     // QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
     //     qDebug("Attempt #%d", attempts);
     // });
-    auto newBoard = dynamic_cast<Board*>(builder.generateLogicalBoard([self = *this, excludes]() {
-        auto* b = new Board(self);
+    auto newBoard = dynamic_cast<Board *>(builder.generateLogicalBoard([self = *this, excludes]() {
+        auto *b = new Board(self);
         b->initAll();
         b->setup_cells(self.width_, self.height_, self.init_bombs_, excludes);
         b->build_neighbor_map();
-        for (auto ex : excludes) {
+        for (auto ex : excludes)
+        {
             b->open_cell(ex);
         }
         return b;
     },
-        std::optional<int>() /* unlimited */));
-    if (newBoard == nullptr) {
+                                                                       std::optional<int>() /* unlimited */));
+    if (newBoard == nullptr)
+    {
         std::cerr << "could not generate new board" << std::endl;
         return;
     }
@@ -62,14 +66,16 @@ Board::Board(int width, int height, int n_bombs, const std::vector<int>& exclude
     delete newBoard;
 }
 
-Board::Board(int width, int height, int n_bombs, const std::vector<Board::Point>& excludes, bool ai_check)
+Board::Board(int width, int height, int n_bombs, const std::vector<Board::Point> &excludes, bool ai_check)
 {
-    if (n_bombs >= width * height - excludes.size()) {
+    if (n_bombs >= width * height - excludes.size())
+    {
         throw std::runtime_error("illegal arguments");
     }
 
     std::vector<int> excludes_index;
-    for (const auto& ex : excludes) {
+    for (const auto &ex : excludes)
+    {
         excludes_index.push_back(from_point(ex));
     }
 
@@ -78,18 +84,20 @@ Board::Board(int width, int height, int n_bombs, const std::vector<Board::Point>
     // QEventLoop::connect(&builder, &BoardBuilder::nextAttempt, [](int attempts) {
     //     qDebug("Attempt #%d", attempts);
     // });
-    auto newBoard = dynamic_cast<Board*>(builder.generateLogicalBoard([self = *this, &excludes_index]() {
-        auto* b = new Board(self);
+    auto newBoard = dynamic_cast<Board *>(builder.generateLogicalBoard([self = *this, &excludes_index]() {
+        auto *b = new Board(self);
         b->initAll();
         b->setup_cells(self.width_, self.height_, self.init_bombs_, excludes_index);
         b->build_neighbor_map();
-        for (auto ex : excludes_index) {
+        for (auto ex : excludes_index)
+        {
             b->open_cell(ex);
         }
         return b;
     },
-        std::optional<int>() /* unlimited */));
-    if (newBoard == nullptr) {
+                                                                       std::optional<int>() /* unlimited */));
+    if (newBoard == nullptr)
+    {
         std::cerr << "could not generate new board" << std::endl;
         return;
     }
@@ -97,21 +105,13 @@ Board::Board(int width, int height, int n_bombs, const std::vector<Board::Point>
     delete newBoard;
 }
 
-Board::Board(const Board& board)
-    : width_(board.width_)
-    , height_(board.height_)
-    , init_bombs_(board.init_bombs_)
-    , failed_(board.failed_)
-    , cells_(board.cells_)
+Board::Board(const Board &board)
+    : width_(board.width_), height_(board.height_), init_bombs_(board.init_bombs_), failed_(board.failed_), cells_(board.cells_)
 {
 }
 
-Board::Board(Board&& board)
-    : width_(board.width_)
-    , height_(board.height_)
-    , init_bombs_(board.init_bombs_)
-    , failed_(board.failed_)
-    , cells_(std::move(board.cells_))
+Board::Board(Board &&board)
+    : width_(board.width_), height_(board.height_), init_bombs_(board.init_bombs_), failed_(board.failed_), cells_(std::move(board.cells_))
 {
 }
 
@@ -119,8 +119,8 @@ Board::~Board()
 {
 }
 
-Board&
-Board::operator=(const Board& board)
+Board &
+Board::operator=(const Board &board)
 {
     width_ = board.width_;
     height_ = board.height_;
@@ -130,8 +130,8 @@ Board::operator=(const Board& board)
     return *this;
 }
 
-Board&
-Board::operator=(Board&& board)
+Board &
+Board::operator=(Board &&board)
 {
     width_ = board.width_;
     height_ = board.height_;
@@ -146,25 +146,29 @@ void Board::setup_cells(int width, int height, int n_bombs)
     setup_cells(width, height, n_bombs, std::vector<int>());
 }
 
-void Board::setup_cells(int width, int height, int n_bombs, const std::vector<int>& excludes)
+void Board::setup_cells(int width, int height, int n_bombs, const std::vector<int> &excludes)
 {
     std::random_device seeder;
     std::mt19937 random;
     random.seed(seeder());
 
     auto cells = width * height;
-    for (auto i = 0; i < cells; i++) {
+    for (auto i = 0; i < cells; i++)
+    {
         cells_.push_back(Cell(false));
     }
 
     std::vector<size_t> bomb_indices;
-    for (auto i = 0; i < cells; i++) {
-        if (std::find(excludes.cbegin(), excludes.cend(), i) == excludes.cend()) {
+    for (auto i = 0; i < cells; i++)
+    {
+        if (std::find(excludes.cbegin(), excludes.cend(), i) == excludes.cend())
+        {
             bomb_indices.push_back(i);
         }
     }
 
-    for (auto i = 0; i < n_bombs; i++) {
+    for (auto i = 0; i < n_bombs; i++)
+    {
         auto rand = random() % bomb_indices.size();
         auto index = bomb_indices.at(rand);
         bomb_indices.erase(bomb_indices.begin() + rand);
@@ -174,15 +178,18 @@ void Board::setup_cells(int width, int height, int n_bombs, const std::vector<in
 
 void Board::build_neighbor_map()
 {
-    std::array<Direction, 8> dirs = { Direction::LeftUp, Direction::Up,
-        Direction::RightUp, Direction::Left,
-        Direction::Right, Direction::LeftDown,
-        Direction::Down, Direction::RightDown };
-    for (auto i = 0; i < get_total_cells(); i++) {
+    std::array<Direction, 8> dirs = {Direction::LeftUp, Direction::Up,
+                                     Direction::RightUp, Direction::Left,
+                                     Direction::Right, Direction::LeftDown,
+                                     Direction::Down, Direction::RightDown};
+    for (auto i = 0; i < get_total_cells(); i++)
+    {
         int bombs = 0;
-        for (auto dir : dirs) {
+        for (auto dir : dirs)
+        {
             auto index = get_cell_index(i, dir);
-            if (index.has_value() && cells_.at(index.value()).has_bomb()) {
+            if (index.has_value() && cells_.at(index.value()).has_bomb())
+            {
                 bombs++;
             }
         }
@@ -196,7 +203,8 @@ Board::get_cell_index(int base, Direction direction)
     auto tmp = from_index(base);
     int column = tmp.first;
     int row = tmp.second;
-    switch (direction) {
+    switch (direction)
+    {
     case Direction::LeftUp:
         if (column <= 0 || row <= 0)
             return std::optional<int>();
@@ -239,7 +247,7 @@ Board::from_index(int index) const
     return std::make_pair<int, int>(index % width_, index / height_);
 }
 
-int Board::from_point(const Board::Point& point) const
+int Board::from_point(const Board::Point &point) const
 {
     return from_point(point.first, point.second);
 }
@@ -249,17 +257,19 @@ int Board::from_point(int column, int row) const
     return column + row * width_;
 }
 
-std::ostream&
-Board::operator<<(std::ostream& os) const
+std::ostream &
+Board::operator<<(std::ostream &os) const
 {
     return show_game_state(os, true);
 }
 
-std::ostream&
-Board::show_game_state(std::ostream& os, bool disclose_bombs) const
+std::ostream &
+Board::show_game_state(std::ostream &os, bool disclose_bombs) const
 {
-    for (auto i = 0; i < width_ * height_; i++) {
-        if (i != 0 && i % width_ == 0) {
+    for (auto i = 0; i < width_ * height_; i++)
+    {
+        if (i != 0 && i % width_ == 0)
+        {
             os << '\n';
         }
         os << char_of_cell(cells_.at(i), disclose_bombs);
@@ -268,20 +278,26 @@ Board::show_game_state(std::ostream& os, bool disclose_bombs) const
     return os;
 }
 
-char Board::char_of_cell(const Cell& c, bool disclose_bomb)
+char Board::char_of_cell(const Cell &c, bool disclose_bomb)
 {
-    if (c.flagged()) {
+    if (c.flagged())
+    {
         return disclose_bomb && !c.has_bomb() ? 'f' : 'F';
     }
 
-    if (disclose_bomb && c.has_bomb()) {
+    if (disclose_bomb && c.has_bomb())
+    {
         return '+';
     }
 
-    if (c.opened()) {
-        if (c.neighbor_bombs() == 0) {
+    if (c.opened())
+    {
+        if (c.neighbor_bombs() == 0)
+        {
             return ' ';
-        } else {
+        }
+        else
+        {
             return std::to_string(c.neighbor_bombs()).at(0);
         }
     }
@@ -289,14 +305,15 @@ char Board::char_of_cell(const Cell& c, bool disclose_bomb)
     return 'O';
 }
 
-void Board::open_cell(const Point& point)
+void Board::open_cell(const Point &point)
 {
     open_cell(from_point(point));
 }
 
 void Board::open_cell(int index)
 {
-    if (cells_.at(index).has_bomb()) {
+    if (cells_.at(index).has_bomb())
+    {
         failed_ = true;
         return;
     }
@@ -310,25 +327,28 @@ void Board::open_cell(int column, int row)
 
 void Board::open_cell4(int index)
 {
-    auto& cell = cells_[index];
-    if (cell.has_bomb() || cell.opened() || cell.flagged()) {
+    auto &cell = cells_[index];
+    if (cell.has_bomb() || cell.opened() || cell.flagged())
+    {
         // do not disclose.
         return;
     }
 
     cell.state() = CellState::Opened;
 
-    if (cell.neighbor_bombs() > 0) {
+    if (cell.neighbor_bombs() > 0)
+    {
         // disclose this cell, but no neighbor cells.
         return;
     }
 
     std::array<Direction, 8> dirs = {
-        Direction::Up, Direction::Left, Direction::Right, Direction::Down, Direction::LeftUp, Direction::RightUp, Direction::LeftDown, Direction::RightDown
-    };
-    for (auto dir : dirs) {
+        Direction::Up, Direction::Left, Direction::Right, Direction::Down, Direction::LeftUp, Direction::RightUp, Direction::LeftDown, Direction::RightDown};
+    for (auto dir : dirs)
+    {
         auto next_index = get_cell_index(index, dir);
-        if (next_index.has_value()) {
+        if (next_index.has_value())
+        {
             open_cell4(next_index.value());
         }
     }
@@ -336,8 +356,10 @@ void Board::open_cell4(int index)
 
 bool Board::cleared() const
 {
-    for (const auto& cell : cells_) {
-        if ((!cell.has_bomb() && !cell.opened()) || (cell.has_bomb() && cell.opened())) {
+    for (const auto &cell : cells_)
+    {
+        if ((!cell.has_bomb() && !cell.opened()) || (cell.has_bomb() && cell.opened()))
+        {
             return false;
         }
     }
@@ -351,8 +373,9 @@ void Board::initAll()
 
 void Board::toggle_flag(int index)
 {
-    auto& cell = cells_[index];
-    switch (cell.state()) {
+    auto &cell = cells_[index];
+    switch (cell.state())
+    {
     case CellState::Opened:
         return;
     case CellState::Closed:
@@ -364,7 +387,7 @@ void Board::toggle_flag(int index)
     }
 }
 
-void Board::toggle_flag(const Point& point)
+void Board::toggle_flag(const Point &point)
 {
     toggle_flag(from_point(point));
 }
@@ -376,41 +399,31 @@ void Board::toggle_flag(int column, int row)
 
 void LazyInitBoard::generateActualBoard(int excludeCellIndex, bool openCell)
 {
-    emit this->generationStarted();
-    //LazyInitBoard* newBoard = nullptr;
-    QThread* thread = QThread::create([openCell, this, self = *this, excludeCellIndex]() {
-        BoardBuilder builder;
-        connect(&builder, &BoardBuilder::nextAttempt, [this](int attempts) {
-            qDebug("Attempt #%d", attempts);
-            emit this->onAttempt(attempts);
-        });
-        auto* newBoard = dynamic_cast<LazyInitBoard*>(builder.generateLogicalBoard([&self, excludeCellIndex]() {
-            auto* b = new LazyInitBoard(self);
-            b->initAll();
-            b->setup_cells(self.width_, self.height_, self.init_bombs_, QVector<int> { excludeCellIndex });
-            b->build_neighbor_map();
-            b->beforeInit = false;
-            b->open_cell(excludeCellIndex);
-            QThread::sleep(1);
-            return b;
-        },
-            std::optional<int>() /* unlimited */));
+    auto self = *this;
+    BoardBuilder builder;
+    auto *newBoard = dynamic_cast<LazyInitBoard *>(builder.generateLogicalBoard([&self, excludeCellIndex]() {
+        auto *b = new LazyInitBoard(self);
+        b->initAll();
+        b->setup_cells(self.width_, self.height_, self.init_bombs_, std::vector<int>{excludeCellIndex});
+        b->build_neighbor_map();
+        b->beforeInit = false;
+        b->open_cell(excludeCellIndex);
+        return b;
+    },
+                                                                                std::optional<int>() /* unlimited */));
 
-        emit this->generationFinished();
+    if (newBoard == nullptr)
+    {
+        std::cerr << "could not generate new board" << std::endl;
+        return;
+    }
+    *this = std::move(*newBoard);
+    delete newBoard;
 
-        if (newBoard == nullptr) {
-            std::cerr << "could not generate new board" << std::endl;
-            return;
-        }
-        *this = std::move(*newBoard);
-        delete newBoard;
-
-        if (openCell) {
-            this->open_cell(excludeCellIndex);
-        }
-    });
-    thread->start();
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    if (openCell)
+    {
+        this->open_cell(excludeCellIndex);
+    }
 }
 
 void LazyInitBoard::initAll()
@@ -420,20 +433,17 @@ void LazyInitBoard::initAll()
 }
 
 LazyInitBoard::LazyInitBoard(int width, int height, int n_bombs, bool ai_check)
-    : Board(width, height, n_bombs, false)
-    , ai_check(ai_check)
+    : Board(width, height, n_bombs, false), ai_check(ai_check)
 {
 }
 
-LazyInitBoard::LazyInitBoard(const LazyInitBoard& lb)
-    : Board(lb)
-    , beforeInit(lb.beforeInit)
+LazyInitBoard::LazyInitBoard(const LazyInitBoard &lb)
+    : Board(lb), beforeInit(lb.beforeInit)
 {
 }
 
-LazyInitBoard::LazyInitBoard(LazyInitBoard&& lb)
-    : Board(std::move(lb))
-    , beforeInit(lb.beforeInit)
+LazyInitBoard::LazyInitBoard(LazyInitBoard &&lb)
+    : Board(std::move(lb)), beforeInit(lb.beforeInit)
 {
 }
 
@@ -441,31 +451,34 @@ LazyInitBoard::~LazyInitBoard()
 {
 }
 
-LazyInitBoard& LazyInitBoard::operator=(const LazyInitBoard& lb)
+LazyInitBoard &LazyInitBoard::operator=(const LazyInitBoard &lb)
 {
     Board::operator=(lb);
     beforeInit = lb.beforeInit;
     return *this;
 }
 
-LazyInitBoard& LazyInitBoard::operator=(LazyInitBoard&& lb)
+LazyInitBoard &LazyInitBoard::operator=(LazyInitBoard &&lb)
 {
     beforeInit = lb.beforeInit;
     Board::operator=(std::move(lb));
     return *this;
 }
 
-void LazyInitBoard::open_cell(const Board::Point& point)
+void LazyInitBoard::open_cell(const Board::Point &point)
 {
     open_cell(from_point(point));
 }
 
 void LazyInitBoard::open_cell(int index)
 {
-    if (beforeInit) {
+    if (beforeInit)
+    {
         generateActualBoard(index, true);
         beforeInit = false;
-    } else {
+    }
+    else
+    {
         Board::open_cell(index);
     }
 }

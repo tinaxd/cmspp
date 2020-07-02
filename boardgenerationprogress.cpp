@@ -2,10 +2,10 @@
 
 using namespace minesweeper;
 
-wxDEFINE_EVENT(BGP_CANCELED, wxCommandEvent);
+wxDEFINE_EVENT(minesweeper::BGP_CANCELED, wxCommandEvent);
 
 BoardGenerationProgress::BoardGenerationProgress(wxWindow *parent, wxWindowID id) :
-    wxWindow(parent, id),
+    wxFrame(parent, id, "generating board..."),
     lcd(new wxStaticText(this, wxID_ANY, ""))
 {
     auto *box = new wxBoxSizer(wxVERTICAL);

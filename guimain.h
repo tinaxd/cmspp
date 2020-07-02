@@ -11,13 +11,11 @@ namespace minesweeper
     wxDECLARE_EVENT(MAIN_REDRAW_ALL, wxCommandEvent);
     struct BoardReplaceEvent : wxEvent
     {
-    public:
         BoardReplaceEvent(wxEventType eventType, int winid, std::shared_ptr<Board> newBoard)
             : wxEvent(winid, eventType), newBoard(std::move(newBoard)) {}
 
         virtual wxEvent *Clone() const { return new BoardReplaceEvent(*this); }
 
-    private:
         std::shared_ptr<Board> newBoard;
     };
 
@@ -40,8 +38,11 @@ namespace minesweeper
         void autoSolve(double intervalSeconds);
 
         void newGame(int width, int height, int n_bombs);
-        void showNewGameWindow();
-        void startAutoSolve();
+        void showNewGameWindow(wxCommandEvent &ev);
+        void startAutoSolve(wxCommandEvent &ev);
+    
+    private:
+        BoardView *central;
     };
 
 } // namespace minesweeper

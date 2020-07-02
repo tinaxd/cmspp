@@ -2,17 +2,19 @@
 
 using namespace minesweeper;
 
-wxDEFINE_EVENT(BOARDCONFIG_FINISH, BoardReplaceEvent);
-wxDEFINE_EVENT(BOARDCONFIG_CANCELED, BoardReplaceEvent);
+wxDEFINE_EVENT(minesweeper::BOARDCONFIG_FINISH, BoardConfigEvent);
+wxDEFINE_EVENT(minesweeper::BOARDCONFIG_CANCELED, BoardConfigEvent);
 
 BoardConfigView::BoardConfigView(wxWindow *parent, wxWindowID id)
-    : wxWindow(parent, id),
+    : wxFrame(parent, id, "New game"),
       widthInput(new wxTextCtrl(this, wxID_ANY)),
       heightInput(new wxTextCtrl(this, wxID_ANY)),
-      bombsInput(new wxTextCtrl(this, wxID_ANY))
+      bombsInput(new wxTextCtrl(this, wxID_ANY)),
+      okButton(new wxButton(this, wxID_ANY, "OK")),
+      cancelButton(new wxButton(this, wxID_ANY, "Cancel"))
 {
     auto *box = new wxBoxSizer(wxVERTICAL);
-
+    const auto flags = wxSizerFlags().Expand().Proportion(1);
     auto *widthBox = new wxBoxSizer(wxHORIZONTAL);
     widthBox->Add(new wxStaticText(this, wxID_ANY, "Width"));
     widthBox->Add(widthInput);
@@ -22,10 +24,14 @@ BoardConfigView::BoardConfigView(wxWindow *parent, wxWindowID id)
     auto *bombBox = new wxBoxSizer(wxHORIZONTAL);
     bombBox->Add(new wxStaticText(this, wxID_ANY, "Bombs"));
     bombBox->Add(bombsInput);
+    auto *btnBox = new wxBoxSizer(wxHORIZONTAL);
+    btnBox->Add(okButton);
+    btnBox->Add(cancelButton);
 
-    box->Add(widthBox);
-    box->Add(heightBox);
-    box->Add(bombBox);
+    box->Add(widthBox, flags);
+    box->Add(heightBox, flags);
+    box->Add(bombBox, flags);
+    box->Add(btnBox, flags);
     SetSizerAndFit(box);
 
     okButton->Bind(wxEVT_BUTTON, &BoardConfigView::onOkButton, this);
@@ -69,7 +75,7 @@ void BoardConfigView::onOkButton(wxCommandEvent &)
         int bombs = std::get<2>(d);
         std::cout << "validate success " << width << " " << height << " " << bombs << std::endl;
 
-        BoardReplaceEvent event(BOARDCONFIG_FINISH, GetId(), width, height, bombs);
+        BoardConfigEvent event(BOARDCONFIG_FINISH, GetId(), width, height, bombs);
         event.SetEventObject(this);
         ProcessWindowEvent(event);
     }
@@ -81,7 +87,7 @@ void BoardConfigView::onOkButton(wxCommandEvent &)
 
 void BoardConfigView::onCancelButton(wxCommandEvent &)
 {
-    BoardReplaceEvent event(BOARDCONFIG_CANCELED, GetId());
+    BoardConfigEvent event(BOARDCONFIG_CANCELED, GetId());
     event.SetEventObject(this);
     ProcessWindowEvent(event);
 }

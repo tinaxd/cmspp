@@ -142,11 +142,6 @@ public:
     void toggle_flag(int xIndex, int yIndex);
 
     int get_total_cells() const { return height_ * width_; }
-
-signals:
-    void generationStarted();
-    void onAttempt(int attempts);
-    void generationFinished();
 };
 
 class LazyInitBoard : public Board {

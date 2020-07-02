@@ -8,17 +8,17 @@
 namespace minesweeper
 {
 
-    class BoardReplaceEvent : public wxEvent
+    class BoardConfigEvent : public wxEvent
     {
     public:
-        BoardReplaceEvent(wxEventType eventType, int winid, int width, int height, int bombs, bool ok)
+        BoardConfigEvent(wxEventType eventType, int winid, int width, int height, int bombs, bool ok)
             : wxEvent(winid, eventType),
               width_(width), height_(height), bombs_(bombs), ok_(ok)
         {
         }
-        BoardReplaceEvent(wxEventType eventType, int winid) : BoardReplaceEvent(eventType, winid, 0, 0, 0, false) {}
-        BoardReplaceEvent(wxEventType eventType, int winid, int width, int height, int bombs)
-            : BoardReplaceEvent(eventType, winid, width, height, bombs, true) {}
+        BoardConfigEvent(wxEventType eventType, int winid) : BoardConfigEvent(eventType, winid, 0, 0, 0, false) {}
+        BoardConfigEvent(wxEventType eventType, int winid, int width, int height, int bombs)
+            : BoardConfigEvent(eventType, winid, width, height, bombs, true) {}
 
         int width() const
         {
@@ -27,7 +27,7 @@ namespace minesweeper
         int height() const { return height_; }
         int bombs() const { return bombs_; }
 
-        virtual wxEvent *Clone() const { return new BoardReplaceEvent(*this); }
+        virtual wxEvent *Clone() const { return new BoardConfigEvent(*this); }
 
     private:
         const int width_;
@@ -36,7 +36,10 @@ namespace minesweeper
         const bool ok_;
     };
 
-    class BoardConfigView : public wxWindow
+    wxDECLARE_EVENT(BOARDCONFIG_FINISH, BoardConfigEvent);
+    wxDECLARE_EVENT(BOARDCONFIG_CANCELED, BoardConfigEvent);
+
+    class BoardConfigView : public wxFrame
     {
     public:
         explicit BoardConfigView(wxWindow *parent, wxWindowID id);

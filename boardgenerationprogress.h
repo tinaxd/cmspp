@@ -7,7 +7,7 @@ namespace minesweeper {
 
 wxDECLARE_EVENT(BGP_CANCELED, wxCommandEvent);
 
-class BoardGenerationProgress : public wxWindow
+class BoardGenerationProgress : public wxFrame
 {
 public:
     explicit BoardGenerationProgress(wxWindow *parent, wxWindowID id);

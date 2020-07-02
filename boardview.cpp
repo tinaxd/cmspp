@@ -1,4 +1,5 @@
 #include "boardview.h"
+#include "guimain.h"
 
 using namespace minesweeper;
 
@@ -15,7 +16,10 @@ BoardView::BoardView(wxWindow *parent,
                      wxWindowID id)
     : wxWindow(parent, id)
 {
-    //setMouseTracking(true);
+    Bind(wxEVT_PAINT, &BoardView::onPaint, this);
+    Bind(wxEVT_LEFT_DOWN, &BoardView::onClick, this);
+    Bind(wxEVT_RIGHT_DOWN, &BoardView::onClick, this);
+    Bind(wxEVT_MOTION, &BoardView::onMove, this);
 }
 
 // QSize BoardView::sizeHint() const
@@ -35,6 +39,15 @@ BoardView::BoardView(wxWindow *parent,
 void BoardView::onPaint(wxPaintEvent &ev)
 {
     wxPaintDC painter(this);
+
+    if (board)
+    {
+        SetMinClientSize({cellWidth * board->width(), cellHeight * board->height()});
+    }
+    else
+    {
+        SetMinClientSize({cellWidth, cellHeight});
+    }
 
     const double width = this->GetClientSize().GetWidth();
     const double height = this->GetClientSize().GetHeight();
@@ -99,7 +112,7 @@ void BoardView::onPaint(wxPaintEvent &ev)
                 painter.SetPen(wxColour(0xdb, 0x70, 0x93));
                 if (cell.is_assumption())
                 {
-                    painter.DrawText("?", wxRealPoint{initX + (cellWidth / 3), initY + (cellHeight / 2)});
+                    painter.DrawText("?", wxRealPoint{initX + (cellWidth / 3), initY});
                 }
                 else
                 {
@@ -229,11 +242,11 @@ void BoardView::onClick(wxMouseEvent &ev)
     judge();
 }
 
-void BoardView::setBoard(std::shared_ptr<Board> board)
+void BoardView::setBoard(BoardReplaceEvent &ev)
 {
-    this->board = board;
-    connect(this->board.get(), &Board::generationStarted, this, &BoardView::onGenerationStarted);
-    connect(this->board.get(), &Board::generationFinished, this, &BoardView::onGenerationFinished);
+    this->board = ev.newBoard;
+    //connect(this->board.get(), &Board::generationStarted, this, &BoardView::onGenerationStarted);
+    //connect(this->board.get(), &Board::generationFinished, this, &BoardView::onGenerationFinished);
     setDiscloseBombs(false);
     Refresh();
 }
@@ -248,8 +261,8 @@ void BoardView::onGenerationStarted()
     }
 
     std::cerr << "showing new progress view" << std::endl;
-    progressView = new BoardGenerationProgress(this, wxID_ANY);
-    connect(this->board.get(), &Board::onAttempt, progressView, &BoardGenerationProgress::updateAttempts);
+    //progressView = new BoardGenerationProgress(this, wxID_ANY);
+    //connect(this->board.get(), &Board::onAttempt, progressView, &BoardGenerationProgress::updateAttempts);
     progressView->Show();
 }
 

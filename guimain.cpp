@@ -85,7 +85,13 @@ void GuiMain::newGame(int width, int height, int n_bombs)
 
 void GuiMain::showNewGameWindow()
 {
-    auto* config = new BoardConfigView(this);
+    std::optional<int> width, height, bombs;
+    if (board) {
+        width = board->width();
+        height = board->height();
+        bombs = board->init_bombs();
+    }
+    auto* config = new BoardConfigView(width, height, bombs, this);
     connect(config, &BoardConfigView::onFinish, [this, config](int width, int height, int bombs) {
         newGame(width, height, bombs);
         config->deleteLater();

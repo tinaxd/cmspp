@@ -72,7 +72,7 @@ void BoardView::paintEvent(QPaintEvent*)
             auto& cell = (*board)[cellIndex];
             switch (cell.state()) {
             case CellState::Closed:
-                if (highlightedCell.has_value() && highlightedCell.value() == cellIndex) {
+                if (highlightedCell.has_value() && *highlightedCell == cellIndex) {
                     painter.setBrush(HIGHLIGHT_COLOR);
                 } else {
                     painter.setBrush(CLOSED_COLOR);

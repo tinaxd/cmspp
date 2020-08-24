@@ -30,7 +30,7 @@ Board::Board(int width, int height, int n_bombs, bool initialize)
     }
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool ai_check)
+Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, bool /*ai_check*/)
     : QObject()
     , width_(width)
     , height_(height)
@@ -64,7 +64,7 @@ Board::Board(int width, int height, int n_bombs, const QVector<int>& excludes, b
     delete newBoard;
 }
 
-Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes, bool ai_check)
+Board::Board(int width, int height, int n_bombs, const QVector<Board::Point>& excludes, bool /*ai_check*/)
 {
     if (n_bombs >= width * height - excludes.size()) {
         throw std::runtime_error("illegal arguments");
@@ -104,8 +104,8 @@ Board::Board(const Board& board)
     , width_(board.width_)
     , height_(board.height_)
     , init_bombs_(board.init_bombs_)
-    , failed_(board.failed_)
     , cells_(board.cells_)
+    , failed_(board.failed_)
 {
 }
 
@@ -114,8 +114,8 @@ Board::Board(Board&& board)
     , width_(board.width_)
     , height_(board.height_)
     , init_bombs_(board.init_bombs_)
-    , failed_(board.failed_)
     , cells_(std::move(board.cells_))
+    , failed_(board.failed_)
 {
 }
 
@@ -186,7 +186,7 @@ void Board::build_neighbor_map()
         int bombs = 0;
         for (auto dir : dirs) {
             auto index = get_cell_index(i, dir);
-            if (index.has_value() && cells_.at(index.value()).has_bomb()) {
+            if (index.has_value() && cells_.at(*index).has_bomb()) {
                 bombs++;
             }
         }
@@ -333,7 +333,7 @@ void Board::open_cell4(int index)
     for (auto dir : dirs) {
         auto next_index = get_cell_index(index, dir);
         if (next_index.has_value()) {
-            open_cell4(next_index.value());
+            open_cell4(*next_index);
         }
     }
 }

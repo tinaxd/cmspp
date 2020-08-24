@@ -16,6 +16,7 @@ class BoardConfigView : public QDialog {
 
 public:
     explicit BoardConfigView(QWidget *parent = nullptr);
+    explicit BoardConfigView(std::optional<int> width, std::optional<int> height, std::optional<int> bombs, QWidget *parent = nullptr);
     ~BoardConfigView();
 
 private:

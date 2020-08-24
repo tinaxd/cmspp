@@ -5,12 +5,25 @@
 using namespace minesweeper;
 
 BoardConfigView::BoardConfigView(QWidget* parent)
+    : BoardConfigView(std::optional<int>(), std::optional<int>(), std::optional<int>(), parent) {}
+
+BoardConfigView::BoardConfigView(std::optional<int> width, std::optional<int> height, std::optional<int> bombs, QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::BoardConfigView)
 {
     ui->setupUi(this);
     connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &BoardConfigView::onOkButton);
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &BoardConfigView::onCancelButton);
+
+    if (width) {
+        ui->widthInput->setText(QString::fromStdString(std::to_string(*width)));
+    }
+    if (height) {
+        ui->heightInput->setText(QString::fromStdString(std::to_string(*height)));
+    }
+    if (bombs) {
+        ui->bombsInput->setText(QString::fromStdString(std::to_string(*bombs)));
+    }
 }
 
 BoardConfigView::~BoardConfigView()
@@ -39,7 +52,7 @@ void BoardConfigView::onOkButton()
 {
     const auto& data = validate();
     if (data.has_value()) {
-        const auto& d = data.value();
+        const auto& d = *data;
         int width = std::get<0>(d);
         int height = std::get<1>(d);
         int bombs = std::get<2>(d);

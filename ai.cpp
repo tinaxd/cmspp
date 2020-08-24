@@ -109,7 +109,7 @@ void MineAI::next_step(bool logging, AICallback& cb)
             for (auto dir : ALL_DIRECTIONS) {
                 auto index = board->get_cell_index(i, dir);
                 if (index.has_value()) {
-                    neighbors.push_back(qMakePair(&(*board)[index.value()], index.value()));
+                    neighbors.push_back(qMakePair(&(*board)[*index], *index));
                 }
             }
             int closed_cells_around = 0;
@@ -189,7 +189,7 @@ void MineAI::next_step(bool logging, AICallback& cb)
             auto next_index = board->get_cell_index(i, dir);
             if (!next_index.has_value())
                 continue;
-            const auto& next_cell = (*board)[next_index.value()];
+            const auto& next_cell = (*board)[*next_index];
             if (next_cell.opened() && !next_cell.is_assumption()) {
                 surrounded_by_nonassumption_open = true;
                 break;
@@ -246,7 +246,7 @@ Board* BoardBuilder::generateLogicalBoard(std::function<Board*()> generator, std
 {
     while (true) {
         attempts++;
-        if (maxAttempts.has_value() && maxAttempts.value() < attempts) {
+        if (maxAttempts.has_value() && *maxAttempts < attempts) {
             return nullptr;
         }
 
@@ -278,7 +278,7 @@ bool BoardBuilder::aiCheck(const Board& board)
         return MineAI::solve_all(QSharedPointer<Board>(new Board(board)),
             false, cb);
     } catch (const AIReasoningError& e) {
-        qDebug(e.what());
+        qDebug("%s", e.what());
         return false;
     }
 }
